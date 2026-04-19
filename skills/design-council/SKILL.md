@@ -154,6 +154,24 @@ Teardown:
 - **Shutdown is protocol.** Use `shutdown_request` — do not leak teammates.
 - **Scope discipline.** Unrelated issues surfaced in debate → new tracker item, never a side-diff.
 
+## Tracker integration (optional, auto-detected)
+
+This skill composes with external issue trackers when present. Detection is explicit and fails-safe — the skill's core protocol runs identically with or without a tracker.
+
+**Supported today: beads** (https://github.com/steveyegge/beads).
+
+**Detection:** `.beads/` directory at the invoking project's git root, OR `bd` binary on `$PATH`. Concretely: `test -d .beads || command -v bd`.
+
+**When beads is detected, the skill automatically:**
+
+- **Phase 1 brief:** runs `bd memories`, `bd ready`, and `bd show <id>` for any bead ID the user references. Output is included verbatim in the opening prompt.
+- **Phase 4 arbitration:** every `DEFER` decision is translated into a `bd create --title=... --description=... --type=task --priority=N` command, executed before Phase 5 teardown. The filed bead ID is recorded in the decision log as the action handle.
+- **Phase 5 teardown:** if a primary bead was under debate, `bd close <id>` runs before `TeamDelete`. Use `--force` if beads flags a known epic-dependency-inversion — that's a beads behavior, not a skill bug. The CEO verifies every DEFER has a filed bead ID before declaring teardown complete.
+
+**When no tracker is detected:** deferred items remain prose entries in the decision log. The CEO does not invent commands for a tracker that isn't there.
+
+**Two-list discipline (when beads is present):** `TeamCreate` creates `~/.claude/tasks/<team>/` for session-scoped coordination between teammates during the debate. Persistent work (existing issues, follow-ups, epics) lives in beads. Never duplicate. Never file session-scoped coordination items as beads.
+
 ## Failure modes this skill guards against
 
 1. **Sequential-thinking regression** — Parallel spawn is the default; multi-tool-call template is shown explicitly in Phase 2.

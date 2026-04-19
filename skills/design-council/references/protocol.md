@@ -11,7 +11,11 @@ Pull from every available source and concatenate verbatim into the opening promp
 1. **`CLAUDE.md`** in the invoking project's cwd. If nested project CLAUDE.mds exist (monorepo), include all that apply.
 2. **Plan / spec files** the user referenced. If the user said "debate this design" while pointing at a spec, the spec is part of the brief.
 3. **Project memory systems**:
-   - Beads (`bd memories`) — run `bd memories` and include anything relevant
+   - **Tracker detection (fails-safe).** Run `test -d .beads || command -v bd` from the invoking project's git root. If either succeeds, beads is the tracker for this debate — proceed with the beads fetch below. If neither succeeds, skip this sub-step entirely; no tracker commands are invented.
+   - **Beads (when detected).** Fetch and include **verbatim** in the opening prompt — do not paraphrase:
+     - `bd memories` — all persistent insights the project has recorded.
+     - `bd ready` — currently-unblocked work (shows the team what's in motion alongside the decision).
+     - `bd show <id>` — for every bead ID the user named in the prompt. One call per ID.
    - Auto-memory (`~/.claude/projects/<hash>/memory/MEMORY.md`) — read and include
    - Custom memory files if the project has them
 4. **Commit conventions**: peek at recent `git log --oneline | head -20` to infer the conventional-commit style; include it as a constraint if the decision may result in commits.
@@ -167,6 +171,26 @@ A defer is a legitimate decision. It requires an explicit revisit criterion:
 **Revisit when**: <specific measurable criterion, e.g., "feature-X DAU exceeds 1000" or "first bug report hits the cache layer">
 ```
 
+### When the decision is DEFER: file a tracker item
+
+A `DEFER` without a filed tracker item is a **silent promise** — prose in the decision log that decays to nothing. Every DEFER needs an action handle.
+
+**When beads is detected** (see Phase 1 detection rule), the revisit criterion is the body of a `bd create` command that runs **immediately**, before the log is written:
+
+```
+bd create \
+  --title="<one-line summary from the disagreement>" \
+  --description="Deferred by council <yyyy-mm-dd-slug>. Revisit when: <criterion>. Context: <short pointer to the loser's argument and why we deferred rather than chose>." \
+  --type=task \
+  --priority=<N>
+```
+
+Priority selection: `0` if the revisit criterion is likely to trip within days; `2` default; `3–4` for speculative revisits. The command emits an ID like `beads-1234`. That ID becomes the `Tracker:` value in the decision log's Deferred-items entry and is also added to the log's frontmatter `linked-tracker-ids` list.
+
+**No filed ID = silent promise = failure mode.** Phase 5 verification catches this (see Teardown sequence).
+
+**When no tracker is detected**, DEFER entries remain prose in the log. No invented commands. The log itself is the only handle — the user is responsible for routing it if they want tracking.
+
 ### When to escalate to the human
 
 Escalate when the decision is:
@@ -251,8 +275,14 @@ Example (tiny):
    SendMessage(to: "*", message: {type: "shutdown_request", reason: "council concluded"})
    ```
 2. Wait for each teammate to respond with `shutdown_response`. Approvals terminate their processes.
-3. Once all have shut down, call `TeamDelete()`. Team directory and shared task list are removed.
-4. Confirm `~/.claude/teams/<team_name>/` is gone; surface the log path to the user.
+3. **DEFER verification (silent-promise guard).** Before any `bd close` or `TeamDelete`, grep the draft log for `DEFER` entries and confirm each has a non-empty `Tracker:` ID. Concretely:
+   ```
+   grep -E '^\s*-\s' <log-path> | grep -i 'tracker:' | grep -iv 'tracker: unfiled'
+   ```
+   The count of matches must equal the number of DEFER decisions recorded in Phase 4. Any `Tracker: unfiled` (or missing `Tracker:`) entry is a silent promise — either file the tracker item now (see Phase 4 "When the decision is DEFER") and update the log, or downgrade the DEFER to a prose note and remove it from the Deferred-items list. Do not proceed past this step with unfiled defers.
+4. **Primary-bead close (beads-detected projects only).** If a primary bead was under debate (recorded as `primary-tracker-id` in the log frontmatter), run `bd close <id>` before `TeamDelete`. If beads reports `blocked by open issues` due to epic dependency-graph inversion, use `--force`. This is a known beads behavior (tracked in the beads project), not a skill bug — surface the `--force` use in the log's appendix so the user sees the workaround was intentional.
+5. Once all have shut down and tracker bookkeeping is complete, call `TeamDelete()`. Team directory and shared task list are removed.
+6. Confirm `~/.claude/teams/<team_name>/` is gone; surface the log path to the user.
 
 ### Shipping the decision — three paths (CEO orchestrates, never implements)
 
@@ -272,4 +302,4 @@ The CEO's role as *design council lead* ends when the decision log is saved. Shi
 
 ### What about deferred tasks?
 
-If the CEO deferred anything with a revisit criterion, record the criterion in the log. If the project has a tracker (beads, Jira, GitHub issues), also file the deferred item there with a pointer back to the log. The log is the durable reference; the tracker item is the action handle.
+See Phase 4 "When the decision is DEFER: file a tracker item" for the operational rule. Summary: if a tracker is detected (today: beads), deferred items are filed at arbitration time and their IDs land in the log's Deferred-items list + frontmatter `linked-tracker-ids`. If no tracker is detected, the prose entry in the log is the only handle and the user is responsible for routing it. The log is always the durable reference; a tracker item, when filed, is the action handle.

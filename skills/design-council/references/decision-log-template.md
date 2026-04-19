@@ -12,6 +12,8 @@ date: YYYY-MM-DD
 slug: <kebab-case-slug>
 team: council-<yyyy-mm-dd>-<slug>
 status: concluded
+primary-tracker-id:          # e.g., "beads-3mj6"; omit if the council was not debating a specific tracker item
+linked-tracker-ids: []       # e.g., ["beads-v76j", "beads-dx9u"]; follow-ups filed during this council
 ---
 
 # Council decision log: <one-line decision title>
@@ -76,9 +78,9 @@ status: concluded
 
 ## Deferred items
 
-<For each DEFER decision>
+<For each DEFER decision. One line each. An `unfiled` entry is a CEO-visible lint signal during Phase 5 verification — either file it via the active tracker (see protocol Phase 4 "When the decision is DEFER") or demote it out of this list.>
 
-- <short title>: revisit when <criterion>. <Tracker ID if filed, e.g., "beads bd-1234">
+- <short title>: revisit when <criterion>. Tracker: <id-or-"unfiled">.
 
 ## Execution plan
 
@@ -101,10 +103,10 @@ status: concluded
 
 ## Follow-up actions (record-keeping only, not implementation)
 
-<Tracker items the CEO files to record deferred decisions. Implementation tasks belong in the Execution plan above, not here.>
+<Non-tracker, non-implementation follow-ups: cross-links, stakeholder notifications, documentation pointers. DEFER-to-tracker filings are handled in Phase 4 and appear in Deferred items above + frontmatter `linked-tracker-ids` — do not duplicate them here. Implementation tasks belong in the Execution plan above, not here.>
 
-- [ ] <e.g., "File beads bd-5678 recording the deferred fallback plan with revisit criterion.">
 - [ ] <e.g., "Link this log from the project tracker's epic notes.">
+- [ ] <e.g., "Notify <stakeholder> of the arbitration outcome on <topic>.">
 
 ## Appendix (optional)
 

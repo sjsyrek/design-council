@@ -158,7 +158,7 @@ Teardown:
 
 This skill composes with external issue trackers when present. Detection is explicit and fails-safe — the skill's core protocol runs identically with or without a tracker.
 
-**Supported today: beads** (https://github.com/steveyegge/beads).
+**Supported today: beads** (https://github.com/gastownhall/beads).
 
 **Detection:** `.beads/` directory at the invoking project's git root, OR `bd` binary on `$PATH`. Concretely: `test -d .beads || command -v bd`.
 

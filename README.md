@@ -60,7 +60,7 @@ devops-engineer · finops-engineer · legal-compliance · domain-expert · histo
 
 ### Beads
 
-When the invoking project uses [beads](https://github.com/steveyegge/beads), this skill automatically:
+When the invoking project uses [beads](https://github.com/gastownhall/beads), this skill automatically:
 
 - Includes `bd memories`, `bd ready`, and `bd show <id>` output in Phase 1 brief gathering.
 - Translates Phase 4 `DEFER` decisions into `bd create` commands before Phase 5 teardown.

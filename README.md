@@ -1,6 +1,6 @@
-# design-council
+# Design Council
 
-A Claude Code plugin that convenes a **parallel team of 11 role-specialized agents** to debate a non-trivial technical decision in real time. The invoking Claude acts as **CEO** — convening, routing peer DMs, arbitrating deadlocks, and persisting a lean decision log.
+> A Claude Code plugin that convenes 11 role-specialized peer agents to debate a technical decision in real time. The invoking Claude acts as CEO — convening, routing peer DMs, arbitrating deadlocks, and persisting a one-page decision log.
 
 Every teammate runs in its own context (not a subagent inheriting yours) and can DM peers directly via `SendMessage`. The debate is genuinely inter-agent, not hub-and-spoke.
 
@@ -39,18 +39,14 @@ devops-engineer · finops-engineer · legal-compliance · domain-expert · histo
 
 ## Installation
 
-From the marketplace:
+Add the personal marketplace, then install the plugin:
 
 ```
-/plugin marketplace add sjsyrek/design-council
-/plugin install design-council@design-council
+/plugin marketplace add sjsyrek/claude-plugins
+/plugin install design-council@sjsyrek
 ```
 
-Or install directly by URL:
-
-```
-claude plugin install https://github.com/sjsyrek/design-council
-```
+The marketplace lives at [sjsyrek/claude-plugins](https://github.com/sjsyrek/claude-plugins) and points at this repo. If you need to pin a specific version, clone this repo at a tag (e.g., `v0.1.0`) and load it via `/plugin marketplace add <local-path>` pointing at a checkout that has its own `.claude-plugin/marketplace.json`.
 
 ## Runtime requirements
 

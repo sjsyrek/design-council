@@ -1,0 +1,20 @@
+{
+  "name": "design-council",
+  "version": "0.1.0",
+  "description": "Convene 11 role-specialized peer agents to debate a technical decision in real time. Invoking Claude acts as CEO: convenes, routes peer-DMs, arbitrates deadlocks, writes a one-page decision log.",
+  "author": {
+    "name": "Steven Syrek",
+    "email": "steven.syrek@gmail.com",
+    "url": "https://github.com/sjsyrek"
+  },
+  "homepage": "https://github.com/sjsyrek/design-council",
+  "repository": "https://github.com/sjsyrek/design-council",
+  "license": "MIT",
+  "keywords": [
+    "design-review",
+    "multi-agent",
+    "decision-log",
+    "architecture",
+    "skill"
+  ]
+}

@@ -97,6 +97,12 @@ The skill assumes the following tools are reachable via the current session:
 
 Some of these are deferred tools in Claude Code; they're resolved at spawn time.
 
+### Recommended: split-pane observability
+
+To watch the 11 seats debate in real time, run Claude Code inside **tmux** or **iTerm2** and set `"teammateMode": "tmux"` (or the default `"auto"`) in your Claude Code `settings.json`. Each seat renders in its own pane. Without a split-pane-capable terminal, seats still run — they just share the main pane and you cycle through them with Shift+Down.
+
+This is a Claude Code harness setting, not a plugin requirement. The council works in any mode; the tmux layout is just what makes the parallelism visible.
+
 ## Decision log location
 
 Logs land at `~/.claude/councils/<yyyy-mm-dd>-<slug>/log.md` — per-user artifact space, **not** plugin-owned. This path is intentional: decision logs outlive any single project checkout.

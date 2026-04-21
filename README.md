@@ -23,7 +23,7 @@ Design Council spawns each seat as an **independent Claude agent with its own co
 - **Direct peer debate.** `SendMessage` lets seats argue with each other without round-tripping through the CEO, which is how real cross-discipline reviews work.
 - **Real-time observability.** In Claude Code, the running team is visible in built-in monitoring; tmux-based agent dashboards (if you run one) make each seat's pane watchable as the debate unfolds.
 - **Durable artifact outside any repo.** The decision log is portable — it outlives branch pivots, repo renames, and migrations. `~/.claude/councils/` is per-user artifact space.
-- **Merge-conflict-aware execution plan.** Phase 5 closes with file-ownership mapping so the same team (re-briefed as implementers) can ship the decision in parallel without collisions.
+- **Merge-conflict-aware execution plan.** Phase 5 closes with file-ownership mapping so parallel implementers — spawned as fresh agents with `isolation: "worktree"` after teardown, with seat identity preserved in the prompt — can ship the decision without colliding on the working tree, index, or commit hooks. See the "Implementation handoff gotchas" section in `SKILL.md` for why team membership is for debate only, not for parallel implementation.
 
 ## Tradeoffs
 

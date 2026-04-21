@@ -145,7 +145,7 @@ Teardown:
 - **Agents are peers with independent contexts.** Your conversation is not shared with any teammate. Everything they need is in their spawn prompt.
 - **Peer-DM first, CEO-route second.** Teammates DM each other for domain-to-domain debate. CEO routes only for tiebreakers, stalls, or strategic calls.
 - **CEO never takes a seat.** Convene, route, arbitrate, record. Never draft positions. Never critique. Never debate.
-- **CEO never writes code or implements anything.** Orchestration, routing, arbitration, and record-keeping are the CEO role. Writing source code, writing implementation tests, running `bd update --claim`, or starting a TDD cycle is seat-work. Shipping can be done **by this same team, re-briefed as implementers per the execution plan** (preferred — the team is already warm with the decision and binding constraints), or by a freshly spawned "crew-<slug>" implementation team, or by a downstream session. In all three paths the CEO stays off the keyboard for application code.
+- **CEO never writes code or implements anything.** Orchestration, routing, arbitration, and record-keeping are the CEO role. Writing source code, writing implementation tests, running `bd update --claim`, or starting a TDD cycle is seat-work. Shipping happens via **fresh per-implementer agents with `isolation: "worktree"` and NO `team_name`** (see "Implementation handoff gotchas" below). Preserve seat identity in the spawn prompt ("You are the X seat of council-<slug>, re-briefed as implementer for lane Y") rather than via team membership — the semantic framing is what mattered in debate, and fresh isolated agents perform identically to warm team members on implementation work while avoiding file-system races. CEO cherry-picks their SHAs in the declared merge order from the execution plan. In all paths the CEO stays off the keyboard for application code.
 - **Execution plan must address merge conflicts.** The Phase 5 log's execution plan partitions follow-up work so parallel implementers do not collide. Map each task to the files it will touch; serialize tasks that touch the same file; call out shared-surface hotspots (manifest files, lockfiles, shared types) and assign them to a single task. If the project has agent-teamwork guidelines (e.g., `CLAUDE.md` worktree rules), mirror them.
 - **Opening prompt carries the constraints.** They are baked into every teammate's spawn prompt — cannot be forgotten mid-debate.
 - **Round budget is hard.** 3 cross-talk rounds max.
@@ -181,8 +181,36 @@ This skill composes with external issue trackers when present. Detection is expl
 5. **Leaked decision logs** — Default path is outside any repo.
 6. **Zombie teammates** — Teardown protocol is mandatory.
 7. **Role collapse** — Fewer than 6 seats triggers a warning; CEO confirms or adds seats.
-8. **CEO seat-creep into implementation** — Shipping can happen via the same team (re-briefed), a new implementation crew, or a handoff. In every case the CEO orchestrates; never types application code.
+8. **CEO seat-creep into implementation** — Shipping happens via fresh isolated agents (see "Implementation handoff gotchas"), with seat identity preserved in the prompt, not via team membership. The CEO orchestrates and cherry-picks; never types application code.
 9. **Collision-blind execution plans** — Follow-up tasks that touch the same files without a sequencing note produce rebase churn. The execution plan maps tasks to files and serializes overlaps.
+10. **Team-membership / worktree-isolation collision** — `team_name` silently overrides `isolation: "worktree"` on the Agent tool. Team members inherit the team's `cwd` (the main repo) and race on the working tree, index, and commit hooks. Use team membership ONLY for debate (read-only on the code); for implementation spawn fresh agents with `isolation: "worktree"` and no `team_name`.
+
+## Implementation handoff gotchas
+
+The debate protocol (Phases 1–5) produces a plan. Executing the plan in parallel adds new failure modes not present during debate, because implementers write to the filesystem and git. Named concretely:
+
+### 1. `team_name` overrides `isolation: "worktree"`
+
+When both are set on an Agent call, the member inherits the team's `cwd` (typically the invoking project root) and the worktree isolation is silently ignored. Two members spawned this way both work in the same checkout, racing on:
+
+- The working tree (unstaged file edits)
+- The index (partial staged state)
+- Commit hooks (pre-commit `git add -A` style hooks sweep other agents' unstaged work when one commits)
+- `HEAD` (direct commits on the user's branch, bypassing CEO cherry-pick review)
+
+**Fix:** for implementation, spawn Agents with `isolation: "worktree"` and NO `team_name`. Each gets a sandbox at `.claude/worktrees/agent-<id>/`. Semantic identity preserved via prompt: *"You are the X seat of council-<slug>, re-briefed as implementer for lane Y."* CEO cherry-picks their reported SHAs in the declared merge order.
+
+### 2. Worktree-agent cwd leaks into parent Bash after completion
+
+After a worktree agent completes, the parent orchestrator's next `Bash` call may report `pwd` from inside the agent's worktree (`.claude/worktrees/agent-<id>/`) instead of the main repo. `git branch --show-current` then returns the agent's worktree branch, and `git cherry-pick` lands on that branch instead of the target branch. You may not notice — cherry-pick onto the worktree's own branch is typically a no-op because the commit is already there.
+
+**Fix:** every CEO-side Bash command that runs git operations should start with `cd /absolute/path/to/project/root &&` and verify with `git branch --show-current` before `cherry-pick`. Observed this quirk 4+ times in a single session that executed ~10 cherry-picks; verifying cwd is cheap, missing it is lossy.
+
+### 3. Commit hooks race between parallel agents
+
+Even when two agents touch disjoint source files, a pre-commit hook that runs across the whole tree (`git add -A`, `lint-staged .`, schema-generate-all) will sweep one agent's unstaged edits into the other's commit. The first agent's work silently ships under the wrong commit message, author, or CHANGELOG entry. The receiving agent may not notice — their commit appears successful. Recovery requires the victim to detect the sweep (by noticing files changed that they didn't expect) and do a `reset --mixed` + re-split + rebuild of both commits preserving author/message.
+
+**Fix:** same as gotcha #1 — isolate each implementer in a worktree. Disjoint files alone are not enough when hooks run across the tree. If isolation truly isn't possible (rare), serialize those implementers rather than parallelize.
 
 ## References
 

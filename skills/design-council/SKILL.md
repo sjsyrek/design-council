@@ -1,7 +1,7 @@
 ---
 name: design-council
-description: This skill should be used when the user asks to "convene the council", "design debate", "get the team together", "council review", "run a design review", "debate this design", or describes a non-trivial technical decision that benefits from multiple specialist perspectives — architecture choices, API shape, significant refactors, security review with stakes, cross-cutting performance work, or feature design where UX, engineering, and product all have standing. Convenes a parallel team of role-specialized agents, each with its own context, who debate in real time via inter-agent messaging while the invoking Claude serves as CEO — convening, routing, and arbitrating unresolved disagreements.
-version: 0.1.2
+description: This skill should be used when the user asks to "convene the council", "design debate", "get the team together", "council review", "run a design review", "debate this design", or describes a non-trivial technical decision that benefits from multiple specialist perspectives — architecture choices, API shape, significant refactors, security review with stakes, cross-cutting performance work, or feature design where UX, engineering, and product all have standing. Also covers audit/review tasks (codebase-wide P0/P1 scans, security reviews with stakes, pre-1.0 hardening passes) via the Review mode variant. Convenes a parallel team of role-specialized agents, each with its own context, who debate in real time via inter-agent messaging while the invoking Claude serves as CEO — convening, routing, and arbitrating unresolved disagreements.
+version: 0.1.3
 ---
 
 # design-council
@@ -53,6 +53,33 @@ Add these when the decision's shape calls for them:
 
 The CEO decides opt-ins in the **Brief** phase based on cues (UI stakes, compliance-heavy, deploy risk, long-lived codebase).
 
+## Review mode variant
+
+The default protocol is **debate-oriented**: seats post verdicts on a single proposal, peer-DM to resolve disagreements, CEO arbitrates what's left. That shape fits decisions (OAuth vs API keys, monolith vs split, migrate now vs later).
+
+For **audit / review** tasks — "review this repo for P0/P1 issues", "security audit of the auth flow", "pre-1.0 hardening pass" — that shape misfits. Seats work disjoint sub-areas, peer-DMs are rare, and cross-talk rounds 2–3 add no value. Signal: the user asks for a "review" over a broad scope and expects many findings back, not one decision.
+
+When running in review mode, apply these protocol adjustments:
+
+1. **Phase 1 Brief:** use `references/opening-prompt-template.md` Review mode section (strict finding format, priority filter, evidence rules). Partition the codebase/scope across seats in the opening prompt so findings don't duplicate.
+2. **Phase 2 Convene:** same parallel fan-out. Still run Phase 2.5 handshake verification (see Universal spawn rules below).
+3. **Phase 3 Cross-talk:** **SKIP by default.** Review seats rarely need to DM each other. Only run Phase 3 if the CEO sees ≥2 overlapping findings that need deduplication via the seats themselves (rare — the CEO usually dedupes at Phase 4).
+4. **Phase 4 Arbitration:** repurposed to **deduplicate overlapping findings** across seats and decide whether merged findings file as one or many tracker items. Verdict tags (APPROVE/CONCERNS/BLOCK) are not used; findings have a priority tag (P0/P1/etc.) instead.
+5. **Phase 5 Decision log:** the primary artifact is the **file-ownership execution map** of the filed tracker items, not arbitration rationale. The "Opening verdicts" and "Resolved disagreements" sections are typically empty; drop them or replace with "Per-seat finding counts." Bulk-file tracker items (see tracker integration below) before the teardown step.
+
+Review mode still requires the Universal spawn prompt rules below — especially the handshake. Silent-spawn failures are more common at large rosters, and a seat that never actually started silently reduces review coverage.
+
+## Universal spawn prompt rules (include in every Agent prompt)
+
+Every spawned teammate must be told these rules explicitly in its prompt. The role brief's "Debate protocol" section assumes them but does not spell them out, and seats regularly fail the contract without them:
+
+1. **`SendMessage` is the only channel to the CEO.** Plain-text output is NOT visible to the CEO — it is discarded at idle. Findings, positions, objections, questions, and status updates MUST be sent via `SendMessage(to: "<ceo-name>", message: "...")`.
+2. **Handshake within the first reasoning turn.** Before starting substantive work, the seat must send a 1-line handshake: `SendMessage(to: "<ceo-name>", summary: "started", message: "Started work on <area>.")`. This tells the CEO the agent spawned correctly and parsed the prompt. Seats that skip the handshake are indistinguishable from silent-spawn failures.
+3. **Final work delivered via SendMessage, even if going idle immediately after.** The failure mode is: agent completes its analysis, outputs findings as plain text, transitions to idle, sends no message. The CEO sees the idle notification but no content. The agent's work is lost.
+4. **Idle notifications carry only an optional `summary` field, not full content.** Do not put substantive findings in the summary and expect the CEO to read them — use a real SendMessage with the full content.
+
+The CEO does NOT assume these rules are inherited — they are explicitly inlined in every spawn prompt. See `protocol.md` Phase 2 for the prompt-assembly template.
+
 ## Protocol (5 phases)
 
 ### Phase 1 — Brief
@@ -87,6 +114,18 @@ Each agent's prompt assembles from:
 
 The `name` parameter makes each teammate addressable via `SendMessage`. `run_in_background: true` keeps them alive for multiple rounds of debate.
 
+### Phase 2.5 — Handshake verification
+
+**Do NOT proceed to cross-talk without confirming each seat actually spawned.** The `Agent` tool can return `[Tool result missing due to internal error]` and still register the teammate in team config — the slot is reserved, but no process started. Observed in one session: 3 of 13 seats silently failed this way, invisible until the user pointed at the empty tmux panes.
+
+Verification steps, bounded to ~60s:
+
+1. **Wait for handshake messages.** The Universal spawn rules require every seat's first SendMessage to be a handshake (`Started work on <area>.`). Count incoming handshakes against the roster.
+2. **Check team config for empty `tmuxPaneId`.** Read `~/.claude/teams/<team_name>/config.json`. Any member with `"tmuxPaneId": ""` after ~30s has not actually spawned a pane — the Agent spawn failed silently.
+3. **For each silent-spawn failure:** re-spawn the Agent once (same prompt), OR drop the seat from the roster and note the coverage gap in the decision log.
+
+After verification, the CEO has a confirmed roster. Missing seats leave gaps in the review; the Phase 5 log must acknowledge which domains were not covered.
+
 ### Phase 3 — Cross-talk (peer DMs + CEO routing, bounded)
 
 **Hard bound: 3 rounds.** A round starts when the CEO prompts the team and ends when replies settle (idle notifications stop arriving).
@@ -106,6 +145,8 @@ Each round:
    - `STUCK` — deadlocked.
 
 Cross-talk ends when: all disagreements `RESOLVED`, OR 3 rounds elapsed, OR CEO declares further rounds unproductive.
+
+**Review-mode exception:** skip this phase entirely unless the CEO sees ≥2 overlapping findings across seats that the seats themselves should dedupe. Review seats work disjoint sub-areas; cross-talk is almost always unproductive. See Review mode variant above.
 
 ### Phase 4 — CEO arbitration
 
@@ -135,6 +176,8 @@ Template: `references/decision-log-template.md`. Contents:
 - Blocked items (hard-no, re-open gated on a structural change to the problem) — distinct from DEFER; prose-only handle, not auto-filed as tracker items
 - **Execution plan** — ordered tasks with file-ownership mapping and a merge-conflict strategy (see `protocol.md` Phase 5)
 - **Length cap: one page. Executive summary, not transcript.**
+
+**Review-mode log variant:** the "Opening verdicts" and "Resolved disagreements" sections are typically empty. Replace with "Per-seat finding counts" and "CEO dedup decisions" (overlapping findings merged into one tracker item). The Execution plan becomes primarily a **file-ownership map of the filed tracker items** — which clusters share code and must be serialized. Bulk-file tracker items (review mode can produce dozens) before teardown; the log records their IDs but the tracker is the durable record.
 
 Teardown:
 
@@ -186,6 +229,8 @@ This skill composes with external issue trackers when present. Detection is expl
 8. **CEO seat-creep into implementation** — Shipping happens via fresh isolated agents (see "Implementation handoff gotchas"), with seat identity preserved in the prompt, not via team membership. The CEO orchestrates and cherry-picks; never types application code.
 9. **Collision-blind execution plans** — Follow-up tasks that touch the same files without a sequencing note produce rebase churn. The execution plan maps tasks to files and serializes overlaps.
 10. **Team-membership / worktree-isolation collision** — `team_name` silently overrides `isolation: "worktree"` on the Agent tool. Team members inherit the team's `cwd` (the main repo) and race on the working tree, index, and commit hooks. Use team membership ONLY for debate (read-only on the code); for implementation spawn fresh agents with `isolation: "worktree"` and no `team_name`.
+11. **Silent spawn failure** — An Agent tool call may return `[Tool result missing due to internal error]` and still register the teammate in team config with `"tmuxPaneId": ""`. The slot is reserved but no process runs. CEO catches this via Phase 2.5 handshake verification; without it, the domain sits silently uncovered. Observed at a 3/13 rate in one session.
+12. **Plain-text findings lost to floor** — Agent completes analysis, outputs findings as plain text, transitions to idle, sends no `SendMessage`. The CEO sees the idle notification but no content; the agent's work is invisible. Distinct from the silent-acceptance pattern in `protocol.md` (which assumes a prior position was posted and silence indicates concurrence) — here, NO position was ever posted. The Universal spawn prompt rules' handshake + explicit "deliver via SendMessage" contract catches this at Phase 2.5 before time is wasted.
 
 ## Implementation handoff gotchas
 

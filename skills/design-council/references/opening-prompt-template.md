@@ -48,3 +48,80 @@ Default: "All seats have posted a verdict. No BLOCK outstanding. All CONCERNS ei
 Every teammate's spawn prompt includes this opening prompt verbatim. The CEO does not paraphrase it per seat — every seat sees the same constraints. This prevents the failure mode where binding constraints get lost in paraphrasing to fit a specific seat's framing.
 
 When drafting: write as if the user were going to read it. Clarity here cascades into the whole debate.
+
+---
+
+## Review mode variant
+
+Use this variant when the council is auditing a codebase or design surface for issues — not debating a single decision. See `SKILL.md` "Review mode variant" for when to invoke.
+
+---
+
+## Review Scope
+
+<One paragraph naming what is being reviewed and why. Not "review the repo" — "Review /path/to/repo for resilience and structural soundness before the 1.0 release cut." Include the target quality bar.>
+
+## Priority filter
+
+<The user's severity threshold. Reviews produce a lot of findings; the filter prevents P2+ noise.>
+
+Default: "P0 = critical (security, data loss, broken builds, correctness bugs that corrupt user state). P1 = high (major reliability/perf regressions, serious architectural weaknesses, significant doc gaps that block users). Do not report P2+."
+
+## Per-seat scope partition
+
+<For each seat, name the sub-area they own in this review. Prevents duplication across seats. Example:>
+
+- `principal-engineer`: module boundaries under `internal/`, package graph health
+- `security-engineer`: input validation, path safety, credential handling in `cmd/bd/hooks.go`, `.beads/.beads-credential-key`
+- `performance-engineer`: hot paths — `bd ready`, `bd list`, cold-start of embedded Dolt
+- (… one partition per seat)
+
+## Known signals
+
+<Any pre-observed issues the CEO wants seats to validate or expand on. One line each. Distinct from binding constraints — these are candidate findings, not rules.>
+
+- <e.g., "`bd init --force` produced 'diverged history' warning — investigate if this is a data-loss footgun">
+- <e.g., "Recent `fix(ci):` commit cluster (45+ commits) suggests chronic flakiness">
+
+## Output format (strict, enforced on every seat)
+
+Every finding must emit exactly this block:
+
+```
+## FINDING <N>: <≤70-char imperative title>
+- Priority: P0 | P1
+- Type: bug | chore | task | feature
+- Evidence: <file:line | grep 'pattern' → N hits | command output>
+- Rationale: <why this priority — impact × likelihood, 1–2 sentences>
+- Scope: investigate | fix — <effort estimate>
+- Description: <3–5 sentences, self-contained, ready for `bd create --description` or equivalent tracker>
+```
+
+Zero-findings line (if the seat's area is clean): `NO P0/P1 FINDINGS — <one-line reason>`.
+
+Per-seat max: 5 findings. If more exist, triage to the top 5 and note overflow.
+
+## Binding Constraints (verbatim)
+
+<Same verbatim-from-sources content as the debate-mode template above. Reviews still inherit CLAUDE.md / memory / privacy context.>
+
+## Non-Goals
+
+<Explicit list of out-of-scope items. Reviews especially benefit from these — prevents scope creep into "while I'm here" refactoring.>
+
+- <e.g., "Not proposing rewrites; surface issues only.">
+- <e.g., "Not filing P2+ findings.">
+- <e.g., "Not duplicating existing tracker items <list>; skip these.">
+
+## Success Criterion
+
+<Default: "All seats have delivered their findings via SendMessage in the strict format above, or explicitly reported NO P0/P1 FINDINGS. CEO has deduplicated overlapping findings and filed each as a tracker item (or prose entry if no tracker detected).">
+
+---
+
+## How Review mode differs from debate mode
+
+- No "Decision Question" — replaced by Review Scope.
+- No verdict tags (APPROVE/CONCERNS/BLOCK) — findings carry priority tags instead.
+- Cross-talk phase is skipped by default (see `SKILL.md` "Review mode variant" Phase 3 adjustment).
+- Decision log emphasizes file-ownership execution map over arbitration rationale.

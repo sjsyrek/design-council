@@ -102,6 +102,57 @@ DEBATE PROTOCOL:
 
 The CEO's own `name` in the team is whatever TeamCreate sets as the team lead's slug. If the CEO is the invoking Claude (the default), use the spawn prompts to instruct each agent to DM the CEO — they may need to be told the CEO's name explicitly, e.g., "Send your opening position to the team lead via SendMessage(to: 'team-lead')". Read `~/.claude/teams/<team_name>/config.json` after `TeamCreate` to discover the lead's name.
 
+### Universal spawn prompt rules (inline in every prompt)
+
+The role brief's "Debate protocol" section assumes the rules below but does not spell them out. Seats regularly fail the contract without them. Inline these four rules verbatim in every spawn prompt — they apply in both debate mode and Review mode:
+
+```
+PROTOCOL CONTRACT (do not deviate):
+
+1. SendMessage is the ONLY channel to the CEO. Plain-text output is
+   invisible to the CEO and is discarded at idle. Findings, positions,
+   objections, questions, and status updates MUST be sent via
+   SendMessage(to: "<ceo-name>", message: "...").
+
+2. First thing: send a handshake. Before starting substantive work,
+   SendMessage(to: "<ceo-name>", summary: "started",
+                message: "Started work on <area>."). This tells the CEO
+   you spawned correctly. Seats that skip the handshake look identical
+   to silent-spawn failures.
+
+3. Final work MUST be delivered via SendMessage. Writing your position
+   or findings as plain text and going idle drops them on the floor —
+   the CEO sees the idle notification but no content.
+
+4. Idle notifications carry only an optional `summary` (≤200 chars).
+   Do not put substantive content in the summary and expect the CEO to
+   read it. Use a full SendMessage.
+```
+
+## Phase 2.5 — Handshake verification (do not skip)
+
+The `Agent` tool can return `[Tool result missing due to internal error]` and still register the teammate in the team config with an empty `tmuxPaneId`. The slot is reserved but no process runs. Without verification, the CEO spends rounds of cross-talk waiting for seats that never started.
+
+Verification procedure, bounded to ~60s total:
+
+1. **Count handshakes.** Each seat's first SendMessage should be a handshake per Universal rule 2. Tally incoming handshakes against the roster spawned in Phase 2.
+2. **Inspect team config.** Read `~/.claude/teams/<team_name>/config.json`. Any member whose `tmuxPaneId` is empty (`""`) after ~30s has not spawned a tmux pane — the Agent tool silently failed.
+3. **Remediate silent-spawn failures:**
+   - **Re-spawn once:** call `Agent(...)` again with the same prompt. If the re-spawn also returns an internal error, drop the seat.
+   - **Drop from roster:** remove the seat from the expected-response set. The Phase 5 log must note the uncovered domain (typical format: "principal-engineer's lane — module boundaries — is the one domain no seat covered. Consider a follow-up single-seat review.").
+4. **Verify handshakes received.** Seats that spawned but never handshook are violating Universal rule 2. Send ONE prompt: `SendMessage(to: <seat>, message: "Acknowledge with a 1-line handshake per protocol rule 2. No findings required yet — just confirm you're running.")`. If still silent after 30s, drop.
+
+Only after verification does the CEO proceed to Phase 3 (debate mode) or jump straight to Phase 4 (Review mode, skipping cross-talk).
+
+### Silent-spawn failure vs silent-acceptance (do not conflate)
+
+Both produce an idle seat with no message, but they are structurally different:
+
+- **Silent-spawn failure (Phase 2.5 concern):** the seat's spawn failed; no prior position was ever posted. Remediated by re-spawn or drop.
+- **Silent acceptance (Phase 3 concern, see below):** the seat posted a position earlier and is now silent after a CEO narrowing question or resolution proposal. Remediated by treating silence as concurrence (see Phase 3).
+
+The handshake in Universal rule 2 distinguishes these: if the handshake never arrived, it's a spawn failure; if the handshake arrived but a later response is missing, it's silent acceptance.
+
 ## Phase 3 — Cross-talk (peer DMs + CEO routing)
 
 ### How idle notifications work

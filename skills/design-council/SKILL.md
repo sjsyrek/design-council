@@ -1,7 +1,7 @@
 ---
 name: design-council
 description: This skill should be used when the user asks to "convene the council", "design debate", "get the team together", "council review", "run a design review", "debate this design", or describes a non-trivial technical decision that benefits from multiple specialist perspectives — architecture choices, API shape, significant refactors, security review with stakes, cross-cutting performance work, or feature design where UX, engineering, and product all have standing. Also covers audit/review tasks (codebase-wide P0/P1 scans, security reviews with stakes, pre-1.0 hardening passes) via the Review mode variant. Convenes a parallel team of role-specialized agents, each with its own context, who debate in real time via inter-agent messaging while the invoking Claude serves as CEO — convening, routing, and arbitrating unresolved disagreements.
-version: 0.1.3
+version: 0.1.4
 ---
 
 # design-council
@@ -201,11 +201,11 @@ Teardown:
 
 ## Tracker integration (optional, auto-detected)
 
-This skill composes with external issue trackers when present. Detection is explicit and fails-safe — the skill's core protocol runs identically with or without a tracker.
+This skill composes with external issue trackers when present. Detection is explicit and fails-safe — **the skill's core protocol runs identically with or without a tracker.** Most users do not have a tracker configured; that is the default path, not the exceptional one.
 
-**Supported today: beads** (https://github.com/gastownhall/beads).
+**Directly supported today: beads** (https://github.com/gastownhall/beads) — because it exposes a CLI (`bd`) and a memory system that compose cleanly with Claude's tool surface. Other trackers (GitHub Issues via `gh`, GitLab via `glab`, Linear, Jira, etc.) can be wired by following the same detection + command-mapping pattern; the skill does not ship bindings for them.
 
-**Detection:** `.beads/` directory at the invoking project's git root, OR `bd` binary on `$PATH`. Concretely: `test -d .beads || command -v bd`.
+**Detection (beads):** `.beads/` directory at the invoking project's git root, OR `bd` binary on `$PATH`. Concretely: `test -d .beads || command -v bd`.
 
 **When beads is detected, the skill automatically:**
 
@@ -213,9 +213,9 @@ This skill composes with external issue trackers when present. Detection is expl
 - **Phase 4 arbitration:** every `DEFER` decision is translated into a `bd create --title=... --description=... --type=task --priority=N` command, executed before Phase 5 teardown. The filed bead ID is recorded in the decision log as the action handle.
 - **Phase 5 teardown:** if a primary bead was under debate, `bd close <id>` runs before `TeamDelete`. Use `--force` if beads flags a known epic-dependency-inversion — that's a beads behavior, not a skill bug. The CEO verifies every DEFER has a filed bead ID before declaring teardown complete.
 
-**When no tracker is detected:** deferred items remain prose entries in the decision log. The CEO does not invent commands for a tracker that isn't there.
+**When no tracker is detected (the common case):** deferred items remain prose entries in the decision log. The CEO does not invent commands for a tracker that isn't there. Users with other trackers can port the same pattern manually (`gh issue create`, `glab issue create`, etc.) based on their workflow — the skill's contract is the decision log's `## Deferred items` list; the tracker integration is a convenience layer on top.
 
-**Two-list discipline (when beads is present):** `TeamCreate` creates `~/.claude/tasks/<team>/` for session-scoped coordination between teammates during the debate. Persistent work (existing issues, follow-ups, epics) lives in beads. Never duplicate. Never file session-scoped coordination items as beads.
+**Two-list discipline (when a persistent tracker is present):** `TeamCreate` creates `~/.claude/tasks/<team>/` for session-scoped coordination between teammates during the debate. Persistent work (existing issues, follow-ups, epics) lives in the tracker. Never duplicate. Never file session-scoped coordination items as persistent tracker items.
 
 ## Failure modes this skill guards against
 
@@ -231,6 +231,9 @@ This skill composes with external issue trackers when present. Detection is expl
 10. **Team-membership / worktree-isolation collision** — `team_name` silently overrides `isolation: "worktree"` on the Agent tool. Team members inherit the team's `cwd` (the main repo) and race on the working tree, index, and commit hooks. Use team membership ONLY for debate (read-only on the code); for implementation spawn fresh agents with `isolation: "worktree"` and no `team_name`.
 11. **Silent spawn failure** — An Agent tool call may return `[Tool result missing due to internal error]` and still register the teammate in team config with `"tmuxPaneId": ""`. The slot is reserved but no process runs. CEO catches this via Phase 2.5 handshake verification; without it, the domain sits silently uncovered. Observed at a 3/13 rate in one session.
 12. **Plain-text findings lost to floor** — Agent completes analysis, outputs findings as plain text, transitions to idle, sends no `SendMessage`. The CEO sees the idle notification but no content; the agent's work is invisible. Distinct from the silent-acceptance pattern in `protocol.md` (which assumes a prior position was posted and silence indicates concurrence) — here, NO position was ever posted. The Universal spawn prompt rules' handshake + explicit "deliver via SendMessage" contract catches this at Phase 2.5 before time is wasted.
+13. **Tracker state-file pollution** — Trackers that export their state on commit (beads' `issues.jsonl`, sqlite-mirror dumps, schema-generators) auto-stage into every implementer's commit during handoff. CEO must strip on cherry-pick. See "Implementation handoff gotchas" §4 for the fix.
+14. **Worktree-base drift** — Agent sandboxes with `isolation: "worktree"` may branch off the default branch, not the CEO's working branch. Implementer commits land on a stale base and either conflict at cherry-pick or — worse — silently adapt to the missing context. Spawn prompts MUST include a base-fix instruction. See gotcha §5.
+15. **Per-lane CHANGELOG conflicts** — Parallel worktrees editing `CHANGELOG.md` under shared headings produce manual cherry-pick conflicts regardless of per-lane coordination rules. Always assign `CHANGELOG.md` to a CEO-owned normalizer pass at the end. See gotcha §6.
 
 ## Implementation handoff gotchas
 
@@ -258,6 +261,34 @@ After a worktree agent completes, the parent orchestrator's next `Bash` call may
 Even when two agents touch disjoint source files, a pre-commit hook that runs across the whole tree (`git add -A`, `lint-staged .`, schema-generate-all) will sweep one agent's unstaged edits into the other's commit. The first agent's work silently ships under the wrong commit message, author, or CHANGELOG entry. The receiving agent may not notice — their commit appears successful. Recovery requires the victim to detect the sweep (by noticing files changed that they didn't expect) and do a `reset --mixed` + re-split + rebuild of both commits preserving author/message.
 
 **Fix:** same as gotcha #1 — isolate each implementer in a worktree. Disjoint files alone are not enough when hooks run across the tree. If isolation truly isn't possible (rare), serialize those implementers rather than parallelize.
+
+### 4. Tracker-managed state files pollute every agent's commit
+
+If the host project uses a tracker that exports its state on commit (e.g., beads' `issues.jsonl`, sqlite-backed task trackers that write to a tracked path, schema-generators that stage generated artifacts), the export lands in every agent's sandbox on every commit. Each cherry-pick then either (a) re-applies a stale snapshot of the tracker state, (b) conflicts against the host's concurrent state, or (c) leaks private tracker metadata into a downstream merge. Observed concretely with `.beads/issues.jsonl` (~400 lines) and `issues.jsonl` (repo-root mirror) auto-staged by the beads pre-commit hook across 6+ lanes in a single council execution.
+
+**Fix (preferred):** instruct each implementer spawn prompt to run `git reset HEAD <state-file> && rm -f <state-file>` after staging and before committing. If the hook auto-stages on *every* `git commit`, the agent may need `git commit --amend -n` once to strip the file; this is the one acceptable use of `--no-verify` during handoff.
+
+**Fix (CEO-side):** `git cherry-pick -n <sha>` then unstage + delete the state file before `git commit`. Every cherry-pick. Cheap; skipping it leaks stale state into the target branch.
+
+**Fix (project-side):** gitignore the state file if feasible, or configure the hook to skip inside `.claude/worktrees/`. Both are one-time fixes that eliminate this gotcha for all future councils.
+
+### 5. Worktree sandbox may branch from default branch, not current HEAD
+
+The `isolation: "worktree"` agent-tool default frequently creates the sandbox off `main` (or the configured default branch), not off the branch the CEO is actually working on (`feat/my-branch`, `fix/xyz`). Implementers working off stale bases produce commits that can't cleanly cherry-pick onto the target branch — the agent's diff references functions/files/constants that don't exist in their sandbox but do exist on the CEO's branch. In the worst case the agent *silently adapts* (substitutes a stand-in symbol) and the cherry-pick succeeds with a semantically-wrong test.
+
+**Fix:** include an explicit base-fix instruction in every implementer spawn prompt:
+
+> *Before you touch any code: run `git branch --show-current` (expect `worktree-agent-*`), then `git log --oneline -3` and confirm the target branch's HEAD commit SHA is reachable. If NOT, `git checkout -B <local-branch> <target-branch>` to put yourself on the right base. Do not silently adapt to the stale base — the CEO cherry-picks your commits onto the target, and silent adaptations produce semantically-wrong merges.*
+
+Agents that self-recover this way produce clean, conflict-free cherry-picks. Agents that don't either ship wrong-base commits or waste time rebasing post-hoc.
+
+### 6. Per-lane CHANGELOG coordination is brittle; prefer a CEO normalizer pass
+
+Multiple parallel worktrees editing `CHANGELOG.md` under overlapping headings produce manual cherry-pick conflicts even when file-level coordination is explicit. Instructing Lane A "edit under the first `### Fixed` heading" and Lane B "coalesce both `### Fixed` headings" fails if Lane B lands first — now there's no "first" heading for Lane A to target, and the diff context lines drift. The conflict is small but manual.
+
+**Fix:** tell every implementer to skip `CHANGELOG.md` entirely. The CEO runs a single normalizer pass at the end, accumulating all `Added` / `Changed` / `Fixed` / `Deprecated` / `Removed` / `Security` entries across lanes into the `Unreleased` section in one commit. One pass, zero conflicts, consistent formatting. Agents report their intended CHANGELOG line in their completion summary; the CEO aggregates.
+
+**Corollary:** the decision log's "Shared-surface callouts" should list `CHANGELOG.md` as CEO-owned when the epic has ≥2 parallel implementation lanes. Per-lane coordination is only robust when exactly one lane writes to the file.
 
 ## References
 

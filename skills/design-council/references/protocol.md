@@ -126,7 +126,16 @@ The CEO does NOT poll an inbox. Idle notifications arrive as conversation turns.
    ```
    SendMessage(to: "security-engineer", message: "Your BLOCK on the cache policy cites 'potential PII leak' — name the specific code path and data shape where that happens. Cite file:line.")
    ```
-4. **Broadcast (sparingly).** When a major pivot in the opening prompt is needed, or the CEO wants everyone to re-verdict:
+   **Before arbitrating, check for terminology collapse.** Two seats often use different words for the same structural position. A single narrowing question ("do you mean X or Y?") resolves what looks like a technical disagreement in one round. Watch for:
+   - Scope words (`MVP`, `Extended`, `Full`) used with different implied boundaries
+   - Data-shape words (`parse`, `tokenize`, `segment`) used for different operations
+   - Outcome words (`preserve`, `round-trip`, `accept`) that mean different things per-seat
+4. **Bridge converged tracks.** When parallel peer-DM exchanges each produce an internally-consistent position, but the two converged tracks externally conflict:
+   ```
+   SendMessage(to: "<seat_in_track_A>", message: "Your track (with <seat_B>) converged on X. A parallel track (<seat_C>, <seat_D>) converged on Y. These look opposed but may be terminological. Does your X mean <framing 1> or <framing 2>? One-sentence answer.")
+   ```
+   Do NOT reopen the peer DMs — both tracks are settled internally. The CEO's job is to pin vocabulary across tracks, not re-run the debate. In practice, two converged sub-groups often turn out to be using different words for the same structural position once a narrowing question cuts through the vocabulary mismatch. Pair this move with the terminology-collapse check in (3).
+5. **Broadcast (sparingly).** When a major pivot in the opening prompt is needed, or the CEO wants everyone to re-verdict:
    ```
    SendMessage(to: "*", message: "Decision scope has narrowed to 'cache only non-PII response fields'. Re-evaluate your verdict under this narrower scope; reply with your new verdict.")
    ```
@@ -142,6 +151,17 @@ CEO explicitly marks each live disagreement:
 - `RESOLVED` — both parties agreed on a resolution.
 - `SHARPENED` — still disagree, but the disagreement is now on a crisper point (progress).
 - `STUCK` — no movement.
+
+### Silent acceptance
+
+A seat that goes idle after the CEO's narrowing question or update *without posting a follow-up objection* has accepted by non-objection. Do NOT wait indefinitely for redundant confirmation. Treat silence as concurrence under two conditions:
+
+1. The CEO's message was a direct narrowing question or resolution proposal addressed to that seat.
+2. The seat read the message (team notification delivered) and transitioned to idle.
+
+If uncertainty remains, send ONE direct "confirm or object?" prompt. If still silent, record the disagreement as `RESOLVED` with "silent acceptance" annotated in the log's Resolved-disagreements entry.
+
+This pattern is especially common in the final rounds of cross-talk, where a seat that's posted earlier positions may reach "I have no further objection" without feeling the need to type it. The protocol's default of "written decisions only" still holds for CEO arbitration — silent acceptance is a seat-level signal, not a CEO-level one.
 
 ### When to end cross-talk early
 
@@ -190,6 +210,30 @@ Priority selection: `0` if the revisit criterion is likely to trip within days; 
 **No filed ID = silent promise = failure mode.** Phase 5 verification catches this (see Teardown sequence).
 
 **When no tracker is detected**, DEFER entries remain prose in the log. No invented commands. The log itself is the only handle — the user is responsible for routing it if they want tracking.
+
+### When the decision is BLOCKED (distinct from DEFER)
+
+Some disagreements resolve to "reject from this decision's scope, not try-later." The re-open condition isn't time or signal — it's a structural change to the problem itself. For example:
+
+- "Requires an upstream library to ship Y before we can parse it safely"
+- "Needs a separate council to establish a safe path for this attack surface"
+- "Gated on an audit that would change the security model"
+- "Out of scope until a different cross-cutting decision lands"
+
+`DEFER` is **expected-later**: time- or signal-based, we'll come back to it when X happens. `BLOCKED` is **out-of-scope-until-structural-change**: the problem shape itself has to change before the item is even actionable.
+
+BLOCKED decisions go into the log's Blocked-items section (not Deferred-items). They are **NOT auto-filed as tracker items** — there's nothing actionable yet; the re-open is gated on a change the council doesn't control. The prose entry is the handle until the structural condition materializes; at that point, a fresh council (or fresh arbitration) is the right response, not reopening this one.
+
+Decision format for BLOCKED:
+
+```
+**Disagreement**: <one line>
+**Seats**: <who>
+**Best argument to proceed**: <their point>
+**Decision**: BLOCKED
+**Re-open condition (structural)**: <what external change would have to happen before this becomes in-scope>
+**Rationale**: <why BLOCKED, not DEFER — why time/signal is the wrong trigger>
+```
 
 ### When to escalate to the human
 

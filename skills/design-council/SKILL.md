@@ -1,7 +1,7 @@
 ---
 name: design-council
 description: This skill should be used when the user asks to "convene the council", "design debate", "get the team together", "council review", "run a design review", "debate this design", or describes a non-trivial technical decision that benefits from multiple specialist perspectives — architecture choices, API shape, significant refactors, security review with stakes, cross-cutting performance work, or feature design where UX, engineering, and product all have standing. Convenes a parallel team of role-specialized agents, each with its own context, who debate in real time via inter-agent messaging while the invoking Claude serves as CEO — convening, routing, and arbitrating unresolved disagreements.
-version: 0.1.0
+version: 0.1.2
 ---
 
 # design-council
@@ -99,6 +99,7 @@ Each round:
    - **Pair disagreers**: `SendMessage(to: <seat_A>, message: "You and <seat_B> disagree on <X>. DM them directly — try to converge or sharpen the disagreement.")` — peer DMs take over.
    - **Invite tiebreaker**: include a third seat whose domain bears on the dispute (e.g., `test-engineer` between `security-engineer` and `performance-engineer`).
    - **Narrowing question**: `SendMessage(to: <seat>, message: "What's the concrete scenario where <X> breaks? Cite file:line.")` — forces vagueness into specificity.
+   - **Bridge converged tracks**: when parallel peer-DM exchanges each produce an internally-consistent position but the two tracks externally conflict, do NOT reopen the DMs. Send each track a narrowing question that pins vocabulary across tracks. In practice, two converged sub-groups often turn out to be using different words for the same structural position; a single "X or Y?" question resolves what looks like a technical disagreement.
 4. CEO closes the round when responses settle. Marks each disagreement as:
    - `RESOLVED` — team converged.
    - `SHARPENED` — still disagree but on a crisper point.
@@ -130,7 +131,8 @@ Template: `references/decision-log-template.md`. Contents:
 - Resolved disagreements — one line each
 - CEO arbitration decisions with rationale
 - Human-escalated items + outcomes
-- Deferred items → follow-up tracker IDs
+- Deferred items (expected-later, time- or signal-based) → follow-up tracker IDs
+- Blocked items (hard-no, re-open gated on a structural change to the problem) — distinct from DEFER; prose-only handle, not auto-filed as tracker items
 - **Execution plan** — ordered tasks with file-ownership mapping and a merge-conflict strategy (see `protocol.md` Phase 5)
 - **Length cap: one page. Executive summary, not transcript.**
 

@@ -78,9 +78,15 @@ linked-tracker-ids: []       # e.g., ["beads-v76j", "beads-dx9u"]; follow-ups fi
 
 ## Deferred items
 
-<For each DEFER decision. One line each. An `unfiled` entry is a CEO-visible lint signal during Phase 5 verification — either file it via the active tracker (see protocol Phase 4 "When the decision is DEFER") or demote it out of this list.>
+<For each DEFER decision. One line each. DEFER = expected-later, time- or signal-based. An `unfiled` entry is a CEO-visible lint signal during Phase 5 verification — either file it via the active tracker (see protocol Phase 4 "When the decision is DEFER") or demote it out of this list.>
 
 - <short title>: revisit when <criterion>. Tracker: <id-or-"unfiled">.
+
+## Blocked items
+
+<For each BLOCKED decision. Structurally distinct from Deferred: a blocked item is rejected from scope with a re-open condition stronger than time or signal — gated on a structural change to the problem (upstream library change, separate council outcome, audit result). No tracker item is filed at arbitration; the prose is the handle until the structural condition materializes. Omit this section if no BLOCKED decisions were made.>
+
+- <short title>: blocked until <structural change>. Re-opening this path requires <concrete condition>, not a passage of time — file a fresh council if the condition is met.
 
 ## Execution plan
 
@@ -108,9 +114,17 @@ linked-tracker-ids: []       # e.g., ["beads-v76j", "beads-dx9u"]; follow-ups fi
 - [ ] <e.g., "Link this log from the project tracker's epic notes.">
 - [ ] <e.g., "Notify <stakeholder> of the arbitration outcome on <topic>.">
 
-## Appendix (optional)
+## Appendix — Emergent insights (opt-in, high value when present)
 
-<Only if the debate surfaced a non-obvious pattern or principle worth preserving beyond this decision. One paragraph max. If nothing rises to this bar, omit.>
+<The most valuable output of a council is sometimes NOT the decision itself but a principle or pattern that emerged from cross-talk. If the debate produced an insight that would apply beyond this decision — a reusable technique, a named anti-pattern, a general principle — capture it here. One or two short paragraphs per insight. Write it like you'd write it into the codebase's top-level design notes.
+
+Emergent insights are the council's side-output most likely to seed follow-up work (tracker items, documentation, other councils). Examples of the shape that earn a slot here:
+
+- "Every byte we don't touch is a byte we can't corrupt" — span-surgical writeback as a general format-parser principle.
+- "Allowlist > blocklist on silent-corruption risk" — structural framing that outlives any single parser.
+- "Warning-as-gate, not warning-as-log" — protocol pattern for any destructive-op-with-warning design.
+
+If nothing rises to this bar, omit the section. But default to capturing when the debate genuinely surfaced something — the log is the only durable home for these.>
 ```
 
 ---
@@ -122,3 +136,5 @@ linked-tracker-ids: []       # e.g., ["beads-v76j", "beads-dx9u"]; follow-ups fi
 - **Verdict column uses the exact strings** `APPROVE` / `CONCERNS` / `BLOCK`. Don't paraphrase — consistent strings let future tooling grep the log.
 - **Rationale must engage the loser's argument.** "We picked A because we liked it" is not a rationale. "We picked A because B's best point — X — is mitigated by Y that we're adopting alongside A" is a rationale.
 - **Deferred items are promises.** Record the revisit criterion crisply. "Someday" is not a criterion.
+- **Distinguish DEFER from BLOCKED.** DEFER is expected-later on a time/signal trigger; BLOCKED is out-of-scope until a structural change happens. They go in different sections and have different handle semantics (tracker-filed vs prose-only).
+- **Emergent insights often outlive the decision.** If cross-talk produced a reusable principle, capture it in the Appendix. The span-surgical writeback rule from one council seeded follow-up work in another; that's the value-shape to watch for.

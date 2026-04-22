@@ -1,6 +1,6 @@
 {
   "name": "design-council",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Convene 11 role-specialized peer agents to debate a technical decision in real time. Invoking Claude acts as CEO: convenes, routes peer-DMs, arbitrates deadlocks, writes a one-page decision log.",
   "author": {
     "name": "Steven Syrek",

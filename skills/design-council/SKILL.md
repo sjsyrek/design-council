@@ -1,7 +1,7 @@
 ---
 name: design-council
 description: Use when the user says "convene the council", "design debate", "council review", "get the team together", "run a design review", or "debate this design"; OR describes a cross-domain decision or review with real stakes — architecture pivot, API surface, pre-release hardening, codebase-wide audit. Convenes parallel role-specialized agents (default Opus) who debate in real time via inter-agent messaging while the invoking Claude serves as CEO. Do NOT invoke for single-specialist questions, bug fixes, or quick library picks.
-version: 0.2.0
+version: 0.2.1
 ---
 
 # design-council
@@ -72,7 +72,7 @@ Every spawn prompt **must** inline these four delivery rules. Skipping them sile
 
 1. `SendMessage(to: "team-lead")` is the ONLY channel to the CEO. Plain-text output is invisible.
 2. Send a 1-line handshake as the first action. Without it, the seat is indistinguishable from a silent-spawn failure.
-3. Final position/findings delivered via `SendMessage`. Writing as plain text then going idle drops work on the floor.
+3. Final position/findings delivered via `SendMessage`. Writing as plain text then going idle drops work on the floor. **Protocol responses (`shutdown_response`, `plan_approval_response`) use their structured JSON form — prose acks don't close the protocol state and will block teardown.**
 4. Idle-notification `summary` field is ≤200 chars — do not put substantive content there.
 
 Canonical wording with peer-DM addressing: `references/protocol.md` Phase 2.

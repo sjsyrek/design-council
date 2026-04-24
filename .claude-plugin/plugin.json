@@ -1,6 +1,6 @@
 {
   "name": "design-council",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Convene parallel role-specialized peer agents (dynamic roster, plan card first) to debate a cross-domain decision or audit a codebase in real time. Invoking Claude acts as CEO: convenes, routes peer-DMs, arbitrates deadlocks, writes a one-page decision log.",
   "author": {
     "name": "Steven Syrek",

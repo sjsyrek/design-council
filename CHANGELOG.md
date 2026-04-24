@@ -2,6 +2,16 @@
 
 All notable changes to the design-council plugin are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] — 2026-04-24
+
+Documentation-only patch release. Three small protocol-text tweaks surfaced during the first fresh-session dogfood of 0.2.0 (an end-to-end council on a real data-loss P0 in the beads tracker). No behavioral change; no code change.
+
+### Changed
+
+- **Structured-response requirement in spawn-prompt contract.** Universal rule 3 now explicitly reminds seats that protocol responses (`shutdown_response`, `plan_approval_response`) must use their structured JSON form — prose acks don't close the protocol state and will block teardown. Observed on the bd-q83 dogfood: one seat prose-acked the shutdown request, blocking `TeamDelete` until a follow-up nudge. `SKILL.md` + `references/protocol.md` Phase 2 updated in parallel.
+- **Cross-talk closure waits for in-flight DMs.** `references/protocol.md` Phase 3 "Round closure" now instructs the CEO to verify no peer-DM exchange is mid-flight (check idle-notification `[to <seat>]` summary markers within the current round) before declaring the round closed. Writing Phase 4 arbitration on incomplete cross-talk forces a rewrite when the late convergence arrives. Observed on the bd-q83 dogfood: integration-security converged ~10 seconds after CEO had drafted v1 of the decision log, forcing a v2 revision. The one-more-idle-cycle wait costs little and prevents the rewrite.
+- **Opening-prompt template carries prior-council context.** `references/opening-prompt-template.md` now has a "Prior-Council Context" section for decisions that originated from a prior council (deferred items, audit findings, punted follow-ups). Includes the prior log path, originating seat/finding, execution-plan cluster, and explicit non-litigated items. Seats need the prior framing to mesh cleanly with earlier decisions; omitting this makes the new council re-derive context the prior log already settled.
+
 ## [0.2.0] — 2026-04-24
 
 Redesign pass driven by a design-council session convened on the skill itself (`council-2026-04-24-skill-redesign`). SKILL.md trimmed from 308 to 117 lines via progressive disclosure; three bold moves landed based on accumulated memory learnings.

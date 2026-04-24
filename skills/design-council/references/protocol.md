@@ -145,8 +145,9 @@ PROTOCOL CONTRACT (do not deviate):
 2. FIRST thing: send a 1-line handshake via SendMessage(to: "team-lead", summary: "started", message: "Started on <area>."). Without this, you are indistinguishable from a silent-spawn failure.
 3. Final position/findings MUST be delivered via SendMessage. Writing as plain text then going idle drops them on the floor.
 4. Idle summaries are ≤200 chars. Do not put substantive content there.
-5. Peer DMs are allowed — SendMessage(to: "<peer-name>", ...). Other seats active: <list>.
-6. Debate protocol: open with ≤300-word position paper, verdict tag APPROVE | CONCERNS | BLOCK, concrete file:line refs when critiquing. BLOCK requires a concrete scenario. In Review mode: no verdict tags; emit findings per format in references/review-mode.md.
+5. Protocol responses (shutdown_response, plan_approval_response) MUST use their structured JSON form — never prose. A prose ack does not close the protocol state and will block teardown. Example shutdown: SendMessage(to: "team-lead", message: {type: "shutdown_response", request_id: "<id>", approve: true}).
+6. Peer DMs are allowed — SendMessage(to: "<peer-name>", ...). Other seats active: <list>.
+7. Debate protocol: open with ≤300-word position paper, verdict tag APPROVE | CONCERNS | BLOCK, concrete file:line refs when critiquing. BLOCK requires a concrete scenario. In Review mode: no verdict tags; emit findings per format in references/review-mode.md.
 ```
 
 The universal protocol contract (the 4 delivery rules + peer-DM + debate vs review) is canonical **here**. SKILL.md references this section by path rather than duplicating it.
@@ -207,6 +208,8 @@ Every teammate goes idle after each turn. The system auto-delivers idle notifica
 ### Round closure
 
 Mark each live disagreement `RESOLVED` / `SHARPENED` / `STUCK`. End when all `RESOLVED`, or no progress in a round, or 3 rounds elapsed.
+
+**Before declaring a round closed, verify no peer-DM exchange is still in-flight.** Check the last few idle notifications for `[to <seat>]` summary markers within the current round; a pair in mid-exchange may deliver a converged position within seconds of your "closed" call. Writing arbitration on incomplete cross-talk forces a rewrite when the late convergence arrives. If any pair is mid-exchange, wait one more idle cycle before moving to Phase 4.
 
 ### Silent acceptance
 

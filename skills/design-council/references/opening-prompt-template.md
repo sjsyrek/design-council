@@ -36,6 +36,17 @@ If no CLAUDE.md exists in the invoking project, say so explicitly in `brief.md`.
 - <e.g., "Not changing the config file format.">
 - <e.g., "Not migrating existing users of the affected API.">
 
+## Prior-Council Context (when applicable)
+
+<If the decision originated in a prior council — e.g., as a DEFERRED item, a finding in an audit/review, or a follow-up the prior log explicitly punted — cite the log path AND the originating seat(s) here. Seats reading the brief need this: the prior debate's framing, the seats who raised it, and the execution-plan cluster it belongs to all shape how this council's decisions mesh with earlier ones. Include at minimum:>
+
+- **Prior log path:** `~/.claude/councils/<yyyy-mm-dd>-<slug>/log.md`
+- **Originating seat(s) and finding#:** <e.g., "qa-engineer F1 + historian F3 — combined into one P0 item">
+- **Execution-plan cluster (from the prior log):** <file-ownership group; names the files that may be touched by siblings of this decision>
+- **What the prior council explicitly did NOT decide:** <so this council doesn't accidentally relitigate settled items>
+
+Omit this section entirely when the decision is fresh.
+
 ## Success Criterion
 
 <How will the CEO know the debate has converged?>

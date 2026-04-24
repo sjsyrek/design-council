@@ -1,29 +1,82 @@
 # design-council — Protocol (deeper dive)
 
-This reference expands the 5-phase protocol from `SKILL.md`. Consult when the debate gets messy, when a teammate drifts, or when the CEO needs a reminder of the exact orchestration moves.
+This reference expands the phase skeleton from `SKILL.md`. Consult when the debate gets messy, when a teammate drifts, or when the CEO needs a reminder of the exact orchestration moves.
 
-## Phase 1 — Brief (before any spawn)
+## Phase 0 — Plan card (before any spawn)
+
+Before `TeamCreate`, the CEO shows the user a **plan card** and waits for confirmation:
+
+```
+About to convene design-council:
+
+Mode:         <debate | review>
+Roster:       <N> seats (<list of slugs>)
+Models:       <per-seat — default Opus on synthesis seats, Sonnet on analytical>
+Opt-ins:      <any added — devops / finops / legal-compliance / domain-expert / historian>
+Rough budget: ~<est. tokens>, ~<est. wall-clock>
+Opening question:
+  <drafted from Phase 1 brief so far>
+
+Reply `go` to proceed · `swap X for Y` / `drop X` / `add X` to adjust · `abort` to cancel.
+```
+
+This fixes recurring pain:
+
+1. **Model-choice surprise** — seat-model defaults land silently otherwise; users discover them mid-debate.
+2. **Cost anxiety** — 8-Opus councils are expensive; the user sees the ballpark before committing.
+3. **Wrong mode** — review tasks are often framed as "debates" in natural language; the plan card surfaces mode choice and asks.
+4. **Roster fit** — the default isn't always right; one-message adjustment is cheap.
+
+Plan card is skippable only if the user has given explicit standing authorization ("auto-mode", durable instruction in CLAUDE.md). Otherwise: spawn requires `go`.
+
+## Phase 1 — Brief (after plan card confirms)
 
 ### Assemble binding constraints
 
 Pull from every available source and concatenate verbatim into the opening prompt. Do **not** paraphrase — paraphrasing is where subtle constraints get lost.
 
-1. **`CLAUDE.md`** in the invoking project's cwd. If nested project CLAUDE.mds exist (monorepo), include all that apply.
+1. **`CLAUDE.md`** in the invoking project's cwd. If nested project CLAUDE.mds exist (monorepo), include all that apply. **If no CLAUDE.md exists,** say so explicitly in the brief and proceed — it's common, not a blocker.
 2. **Plan / spec files** the user referenced. If the user said "debate this design" while pointing at a spec, the spec is part of the brief.
 3. **Project memory systems**:
-   - **Tracker detection (fails-safe).** Run `test -d .beads || command -v bd` from the invoking project's git root. If either succeeds, beads is the tracker for this debate — proceed with the beads fetch below. If neither succeeds, skip this sub-step entirely; no tracker commands are invented.
-   - **Beads (when detected).** Fetch and include **verbatim** in the opening prompt — do not paraphrase:
-     - `bd memories` — all persistent insights the project has recorded.
-     - `bd ready` — currently-unblocked work (shows the team what's in motion alongside the decision).
-     - `bd show <id>` — for every bead ID the user named in the prompt. One call per ID.
-   - Auto-memory (`~/.claude/projects/<hash>/memory/MEMORY.md`) — read and include
-   - Custom memory files if the project has them
-4. **Commit conventions**: peek at recent `git log --oneline | head -20` to infer the conventional-commit style; include it as a constraint if the decision may result in commits.
-5. **Privacy context**: if the invoking repo has a public remote (`git remote -v`), flag this — it affects decisions about where artifacts live, what leaks to commit history, etc.
+   - **Tracker detection (fails-safe).** Run `test -d .beads || command -v bd` from the invoking project's git root. If either succeeds, beads is this debate's tracker. If neither succeeds, skip — no tracker commands are invented. See `tracker-integration.md` for adapter contract.
+   - **Beads (when detected):** fetch and inline `bd memories`, `bd ready`, `bd show <id>` for every bead ID the user named.
+   - **Auto-memory** (`~/.claude/projects/<hash>/memory/MEMORY.md` + referenced files) — read and include.
+4. **Skill self-audit (mandatory).** See next sub-section.
+5. **Commit conventions** — `git log --oneline | head -20`.
+6. **Privacy context** — `git remote -v`; public vs private affects artifact placement.
+
+### Skill self-audit — the council reads its own memory
+
+The council is an ideal instrument for discovering lessons about itself, but those lessons only compound if the next council actually reads them. Phase 1 includes a mandatory self-audit step that closes this loop **without** leaving the user's machine.
+
+**What to read:**
+
+```bash
+# Entries in the invoking project's auto-memory that reference the council skill
+grep -ril -E '(design-council|council-2[0-9]{3}-|handshake|spawn[[:space:]]|seat[[:space:]]|Phase [0-9])' \
+  ~/.claude/projects/*/memory/ 2>/dev/null
+
+# Emergent-insights sections from prior decision logs (any project, any user)
+ls -1 ~/.claude/councils/*/log.md 2>/dev/null | while read f; do
+  awk '/^## Appendix — Emergent insights/,/^## /' "$f" | grep -v '^## '
+done
+```
+
+The first pattern surfaces cross-project feedback entries the user has recorded about how councils run — e.g., `feedback_council_model_choice_up_front.md`, `feedback_cherrypick_vs_checkout_implementation_handoff.md`. The second surfaces the "emergent insights" sections from every decision log on disk, which is where the council writes its own accumulated wisdom.
+
+**Contradiction check (the important part):**
+
+If any surfaced entry directly contradicts a prescription in the current `SKILL.md` or `references/protocol.md` (e.g., memory says "use X" and the skill says "use Y"), **memory is ground truth**. Memory is written after real sessions fail; the skill's text is written to prevent the next failure. When they disagree, the skill is stale.
+
+The CEO's response to a detected contradiction:
+
+1. Flag the contradiction in the shared `brief.md` so every seat sees it.
+2. **Follow memory, not the skill's stale prescription.**
+3. Record the contradiction in the decision log's `Appendix — Emergent insights` so it becomes a signal for the next skill-redesign council (or a surfaced item for the user to contribute upstream).
+
+This is how the cherry-pick-vs-checkout drift that lived in SKILL.md through 0.1.4 would have been caught automatically in the first 0.1.5 council — the `feedback_cherrypick_vs_checkout_implementation_handoff.md` memory existed; nothing read it.
 
 ### Decide opt-in seats
-
-Cues and corresponding additions:
 
 | Cue | Add seat |
 |-----|----------|
@@ -31,370 +84,236 @@ Cues and corresponding additions:
 | "PII", "privacy", "GDPR", "license", "legal", "compliance" | `legal-compliance` |
 | "cost", "spend", "quota", "budget", "API cost" | `finops-engineer` |
 | Product-area jargon user expects agents to know | `domain-expert` |
-| "mature codebase", "don't repeat past mistakes", codebase >2 years old | `historian` |
+| "mature codebase", "don't repeat past mistakes", >2-year-old codebase | `historian` |
 | UI stakes low (backend-only, CLI-only) | Drop `ui-ux-designer` and `accessibility-specialist` |
+| No runtime UI + no user input + no infra | Drop `security-engineer`, `platform-engineer` too — 4–6 seat debate is fine |
 
-If the decision is narrowly scoped and ≤6 seats would apply, warn the user and confirm before proceeding — the council pattern is expensive for small decisions. Suggest a lighter tool.
+Dynamic roster sizing is a feature, not a warning: match seat count to domain count. The 8–11 range is typical; tighter is correct when the decision's surface is narrow.
+
+### Write the shared brief artifact
+
+The CEO writes the concatenated binding constraints to `~/.claude/councils/<slug>/brief.md` **once**. Every spawn prompt tells the seat to `Read` that path. Identical `Read` results hit the 5-minute prompt cache across parallel spawns — recovers ~7–12k tokens on 8-seat councils with constraint-heavy projects, at zero correctness cost.
 
 ### Draft the opening prompt
 
-Use `opening-prompt-template.md`. Four sections, in order:
+Use `opening-prompt-template.md`. Four sections:
 
 1. **Decision question** — one paragraph, specific, answerable.
-2. **Binding constraints** — verbatim from sources above.
-3. **Non-goals** — what is explicitly out of scope. Prevents scope creep in agent positions.
-4. **Success criterion** — how the CEO will know the debate has converged. Usually "all seats APPROVE or CONCERNS with a named resolution path; no BLOCK outstanding."
+2. **Binding constraints** — pointer to `~/.claude/councils/<slug>/brief.md` (not inlined).
+3. **Non-goals** — what is explicitly out of scope.
+4. **Success criterion** — how the CEO knows the debate has converged.
 
 ## Phase 2 — Convene (parallel fan-out)
 
 ### The multi-tool-call template
 
 ```
-TeamCreate(team_name: "council-2026-04-19-session-cache-ttl", description: "Debate: choosing a session-cache TTL policy")
+TeamCreate(team_name: "council-2026-04-19-session-cache-ttl",
+           description: "Debate: session-cache TTL policy",
+           agent_type: "team-lead")
 
-Agent(team_name: "council-2026-04-19-session-cache-ttl", name: "principal-engineer",      subagent_type: "general-purpose", run_in_background: true, prompt: "<principal-engineer role brief>\n\n<binding constraints>\n\n<opening prompt>\n\n<debate-protocol instructions>")
-Agent(team_name: "council-2026-04-19-session-cache-ttl", name: "platform-engineer",       subagent_type: "general-purpose", run_in_background: true, prompt: "<platform-engineer role brief>\n\n<binding constraints>\n\n<opening prompt>\n\n<debate-protocol instructions>")
-Agent(team_name: "council-2026-04-19-session-cache-ttl", name: "integration-engineer",    subagent_type: "general-purpose", run_in_background: true, prompt: "...")
-Agent(team_name: "council-2026-04-19-session-cache-ttl", name: "test-engineer",           subagent_type: "general-purpose", run_in_background: true, prompt: "...")
-Agent(team_name: "council-2026-04-19-session-cache-ttl", name: "qa-engineer",             subagent_type: "general-purpose", run_in_background: true, prompt: "...")
-Agent(team_name: "council-2026-04-19-session-cache-ttl", name: "security-engineer",       subagent_type: "general-purpose", run_in_background: true, prompt: "...")
-Agent(team_name: "council-2026-04-19-session-cache-ttl", name: "performance-engineer",    subagent_type: "general-purpose", run_in_background: true, prompt: "...")
-Agent(team_name: "council-2026-04-19-session-cache-ttl", name: "product-manager",         subagent_type: "general-purpose", run_in_background: true, prompt: "...")
-Agent(team_name: "council-2026-04-19-session-cache-ttl", name: "ui-ux-designer",          subagent_type: "general-purpose", run_in_background: true, prompt: "...")
-Agent(team_name: "council-2026-04-19-session-cache-ttl", name: "accessibility-specialist",subagent_type: "general-purpose", run_in_background: true, prompt: "...")
-Agent(team_name: "council-2026-04-19-session-cache-ttl", name: "technical-writer",        subagent_type: "general-purpose", run_in_background: true, prompt: "...")
-
-# Plus any opt-ins from Phase 1
+Agent(team_name: "...", name: "principal-engineer",   subagent_type: "general-purpose", model: "opus",    run_in_background: true, prompt: <spawn prompt>)
+Agent(team_name: "...", name: "platform-engineer",    subagent_type: "general-purpose", model: "opus",    run_in_background: true, prompt: <spawn prompt>)
+Agent(team_name: "...", name: "integration-engineer", subagent_type: "general-purpose", model: "opus",    run_in_background: true, prompt: <spawn prompt>)
+... (remaining mandatory seats + opt-ins)
 ```
 
-**All in one message.** If spawns are sequential, the parallel-first principle is violated.
+**All in one message.** Sequential spawns violate the parallel-first principle.
 
 ### The spawn-prompt assembly
 
 For each teammate, the prompt is four concatenated blocks:
 
 ```
-<role brief: content of references/roles/<slug>.md verbatim>
+<role brief — read from references/roles/<slug>.md>
 
 ---
 
-BINDING CONSTRAINTS (these apply to your reasoning and any recommendations you make):
-
-<verbatim content from Phase 1 constraint gathering>
+BINDING CONSTRAINTS: Read ~/.claude/councils/<slug>/brief.md before posting your opening. The CEO wrote it once for all seats.
 
 ---
 
 DECISION TO DEBATE:
 
-<verbatim opening prompt from Phase 1 draft>
+<verbatim opening prompt from Phase 1>
 
 ---
 
-DEBATE PROTOCOL:
-
-1. Open by posting to the CEO (via SendMessage(to: "<ceo-name>")) a position paper: ≤300 words, verdict tagged exactly one of APPROVE / CONCERNS / BLOCK, concrete file:line refs when critiquing existing code.
-2. During cross-talk, expect peer DMs from other seats about disagreements. Respond directly via SendMessage(to: "<peer-name>"). Do not always loop in the CEO — peer DMs are the primary mechanism.
-3. BLOCK requires naming the concrete scenario that breaks. Abstract objections are CONCERNS, not BLOCK.
-4. Use TaskCreate on the shared task list to record concrete action items that emerge from the debate (for CEO to triage later).
-5. Go idle between turns — normal. The CEO will wake you with SendMessage when your input is needed.
-6. On shutdown_request, respond with shutdown_response; approve: true when your work is complete.
-```
-
-The CEO's own `name` in the team is whatever TeamCreate sets as the team lead's slug. If the CEO is the invoking Claude (the default), use the spawn prompts to instruct each agent to DM the CEO — they may need to be told the CEO's name explicitly, e.g., "Send your opening position to the team lead via SendMessage(to: 'team-lead')". Read `~/.claude/teams/<team_name>/config.json` after `TeamCreate` to discover the lead's name.
-
-### Universal spawn prompt rules (inline in every prompt)
-
-The role brief's "Debate protocol" section assumes the rules below but does not spell them out. Seats regularly fail the contract without them. Inline these four rules verbatim in every spawn prompt — they apply in both debate mode and Review mode:
-
-```
 PROTOCOL CONTRACT (do not deviate):
 
-1. SendMessage is the ONLY channel to the CEO. Plain-text output is
-   invisible to the CEO and is discarded at idle. Findings, positions,
-   objections, questions, and status updates MUST be sent via
-   SendMessage(to: "<ceo-name>", message: "...").
-
-2. First thing: send a handshake. Before starting substantive work,
-   SendMessage(to: "<ceo-name>", summary: "started",
-                message: "Started work on <area>."). This tells the CEO
-   you spawned correctly. Seats that skip the handshake look identical
-   to silent-spawn failures.
-
-3. Final work MUST be delivered via SendMessage. Writing your position
-   or findings as plain text and going idle drops them on the floor —
-   the CEO sees the idle notification but no content.
-
-4. Idle notifications carry only an optional `summary` (≤200 chars).
-   Do not put substantive content in the summary and expect the CEO to
-   read it. Use a full SendMessage.
+1. SendMessage(to: "team-lead") is the ONLY channel to the CEO. Plain-text output is invisible and is discarded at idle.
+2. FIRST thing: send a 1-line handshake via SendMessage(to: "team-lead", summary: "started", message: "Started on <area>."). Without this, you are indistinguishable from a silent-spawn failure.
+3. Final position/findings MUST be delivered via SendMessage. Writing as plain text then going idle drops them on the floor.
+4. Idle summaries are ≤200 chars. Do not put substantive content there.
+5. Peer DMs are allowed — SendMessage(to: "<peer-name>", ...). Other seats active: <list>.
+6. Debate protocol: open with ≤300-word position paper, verdict tag APPROVE | CONCERNS | BLOCK, concrete file:line refs when critiquing. BLOCK requires a concrete scenario. In Review mode: no verdict tags; emit findings per format in references/review-mode.md.
 ```
+
+The universal protocol contract (the 4 delivery rules + peer-DM + debate vs review) is canonical **here**. SKILL.md references this section by path rather than duplicating it.
 
 ## Phase 2.5 — Handshake verification (do not skip)
 
-The `Agent` tool can return `[Tool result missing due to internal error]` and still register the teammate in the team config with an empty `tmuxPaneId`. The slot is reserved but no process runs. Without verification, the CEO spends rounds of cross-talk waiting for seats that never started.
+The `Agent` tool can return `[Tool result missing due to internal error]` and still register the teammate with an empty `tmuxPaneId`. Slot reserved, no process started. Without verification, the CEO waits cross-talk rounds for seats that never existed. Observed at a 3/13 rate in one session.
 
-Verification procedure, bounded to ~60s total:
+Verification, bounded to ~60s total:
 
-1. **Count handshakes.** Each seat's first SendMessage should be a handshake per Universal rule 2. Tally incoming handshakes against the roster spawned in Phase 2.
-2. **Inspect team config.** Read `~/.claude/teams/<team_name>/config.json`. Any member whose `tmuxPaneId` is empty (`""`) after ~30s has not spawned a tmux pane — the Agent tool silently failed.
-3. **Remediate silent-spawn failures:**
-   - **Re-spawn once:** call `Agent(...)` again with the same prompt. If the re-spawn also returns an internal error, drop the seat.
-   - **Drop from roster:** remove the seat from the expected-response set. The Phase 5 log must note the uncovered domain (typical format: "principal-engineer's lane — module boundaries — is the one domain no seat covered. Consider a follow-up single-seat review.").
-4. **Verify handshakes received.** Seats that spawned but never handshook are violating Universal rule 2. Send ONE prompt: `SendMessage(to: <seat>, message: "Acknowledge with a 1-line handshake per protocol rule 2. No findings required yet — just confirm you're running.")`. If still silent after 30s, drop.
+1. **Count handshakes** — incoming `SendMessage(summary: "started", ...)` against the roster.
+2. **Inspect team config** — `~/.claude/teams/<team_name>/config.json`. Any member with `"tmuxPaneId": ""` after ~30s has not actually spawned.
+3. **Remediate silent-spawn failures** — re-spawn once with the same prompt; if still failing, drop the seat and note the uncovered domain in the Phase 5 log.
+4. **Verify late handshakes** — seats that spawned but haven't handshook in ~30s: send one `SendMessage(to: <seat>, message: "Acknowledge with a 1-line handshake per contract. No findings yet.")`. Still silent after 30s → drop.
 
-Only after verification does the CEO proceed to Phase 3 (debate mode) or jump straight to Phase 4 (Review mode, skipping cross-talk).
+The CEO emits a structured status line before proceeding:
 
-### Silent-spawn failure vs silent-acceptance (do not conflate)
+```
+HANDSHAKE: 8/8 ok | silent-spawn=[] | empty-pane=[] | verdict=PROCEED
+```
 
-Both produce an idle seat with no message, but they are structurally different:
+Grep-able; telemetry-friendly; distinguishes this state from cross-talk silence.
 
-- **Silent-spawn failure (Phase 2.5 concern):** the seat's spawn failed; no prior position was ever posted. Remediated by re-spawn or drop.
-- **Silent acceptance (Phase 3 concern, see below):** the seat posted a position earlier and is now silent after a CEO narrowing question or resolution proposal. Remediated by treating silence as concurrence (see Phase 3).
+### Silent-spawn failure vs silent-acceptance
 
-The handshake in Universal rule 2 distinguishes these: if the handshake never arrived, it's a spawn failure; if the handshake arrived but a later response is missing, it's silent acceptance.
+Both look like an idle seat with no message. Distinguish:
+
+- **Silent-spawn (Phase 2.5 concern):** the seat never started. No handshake ever arrived. Remediate: re-spawn or drop.
+- **Silent-acceptance (Phase 3 concern, below):** seat posted an opening position and has now gone idle after a CEO narrowing question or resolution proposal. Remediate: treat silence as concurrence.
+
+The handshake disambiguates: handshake missing = spawn failure; handshake present but follow-up missing = silent-acceptance.
 
 ## Phase 3 — Cross-talk (peer DMs + CEO routing)
 
 ### How idle notifications work
 
-Every teammate goes idle after each turn. The system auto-delivers idle notifications to the CEO, including:
-- The teammate's last message (if addressed to CEO)
-- A short summary of peer DMs sent by that teammate
+Every teammate goes idle after each turn. The system auto-delivers idle notifications to the CEO: last message, short summary of peer DMs sent by that teammate. The CEO does NOT poll an inbox — idle notifications arrive as conversation turns.
 
-The CEO does NOT poll an inbox. Idle notifications arrive as conversation turns.
+### Routing moves (pick one per disagreement per round)
 
-### Routing moves (pick one per disagreement, per round)
-
-1. **Pair disagreers.** When two seats have named each other:
+1. **Pair disagreers.**
    ```
-   SendMessage(to: "security-engineer", message: "You and performance-engineer disagree on the 24h cache TTL. DM them directly and try to converge or sharpen the disagreement. Report back when you've either agreed on a resolution or identified the crisp remaining split.")
+   SendMessage(to: "security-engineer", message: "You and performance-engineer disagree on 24h TTL. DM them directly. Report back when converged or sharpened.")
    ```
-2. **Invite tiebreaker.** When two seats are stuck but a third domain bears on it:
-   ```
-   SendMessage(to: "test-engineer", message: "security-engineer and performance-engineer disagree on caching TTL. Weigh in from the test/regression angle — what's the most testable cache policy? DM both of them.")
-   ```
+2. **Invite tiebreaker.** Third seat whose domain bears on the split.
 3. **Narrowing question.** When a seat's objection is vague:
    ```
-   SendMessage(to: "security-engineer", message: "Your BLOCK on the cache policy cites 'potential PII leak' — name the specific code path and data shape where that happens. Cite file:line.")
+   SendMessage(to: "security-engineer", message: "Your BLOCK cites 'potential PII leak' — name the code path and data shape. file:line.")
    ```
-   **Before arbitrating, check for terminology collapse.** Two seats often use different words for the same structural position. A single narrowing question ("do you mean X or Y?") resolves what looks like a technical disagreement in one round. Watch for:
-   - Scope words (`MVP`, `Extended`, `Full`) used with different implied boundaries
-   - Data-shape words (`parse`, `tokenize`, `segment`) used for different operations
-   - Outcome words (`preserve`, `round-trip`, `accept`) that mean different things per-seat
-4. **Bridge converged tracks.** When parallel peer-DM exchanges each produce an internally-consistent position, but the two converged tracks externally conflict:
+   **Before arbitrating, check for terminology collapse.** Two seats often use different words for the same structural position. Watch: scope words (`MVP`, `Extended`), data-shape words (`parse`, `tokenize`, `segment`), outcome words (`preserve`, `round-trip`, `accept`).
+4. **Bridge converged tracks.** Two peer-DM groups each converge internally but externally conflict:
    ```
-   SendMessage(to: "<seat_in_track_A>", message: "Your track (with <seat_B>) converged on X. A parallel track (<seat_C>, <seat_D>) converged on Y. These look opposed but may be terminological. Does your X mean <framing 1> or <framing 2>? One-sentence answer.")
+   SendMessage(to: "<seat_in_track_A>", message: "Your track (with <B>) converged on X. A parallel track (<C>, <D>) converged on Y. These may be terminological. Does X mean <framing 1> or <framing 2>? One-sentence answer.")
    ```
-   Do NOT reopen the peer DMs — both tracks are settled internally. The CEO's job is to pin vocabulary across tracks, not re-run the debate. In practice, two converged sub-groups often turn out to be using different words for the same structural position once a narrowing question cuts through the vocabulary mismatch. Pair this move with the terminology-collapse check in (3).
-5. **Broadcast (sparingly).** When a major pivot in the opening prompt is needed, or the CEO wants everyone to re-verdict:
-   ```
-   SendMessage(to: "*", message: "Decision scope has narrowed to 'cache only non-PII response fields'. Re-evaluate your verdict under this narrower scope; reply with your new verdict.")
-   ```
-   Broadcast is O(team-size) cost — reserve for genuinely all-seats moments.
+   Do NOT reopen peer DMs; pin vocabulary across tracks.
+5. **Broadcast (sparingly).** O(team-size) cost; reserve for genuine all-seats pivots.
 
-### Round closure criteria
+### Round closure
 
-A round is "closed" when:
-- All teammates who received a SendMessage this round have responded, AND
-- No new peer-DM summaries have arrived for a reasonable wait.
-
-CEO explicitly marks each live disagreement:
-- `RESOLVED` — both parties agreed on a resolution.
-- `SHARPENED` — still disagree, but the disagreement is now on a crisper point (progress).
-- `STUCK` — no movement.
+Mark each live disagreement `RESOLVED` / `SHARPENED` / `STUCK`. End when all `RESOLVED`, or no progress in a round, or 3 rounds elapsed.
 
 ### Silent acceptance
 
-A seat that goes idle after the CEO's narrowing question or update *without posting a follow-up objection* has accepted by non-objection. Do NOT wait indefinitely for redundant confirmation. Treat silence as concurrence under two conditions:
+A seat that goes idle after a direct narrowing question *without posting a follow-up objection* has accepted by non-objection. One "confirm or object?" prompt if uncertain; still silent → log as `RESOLVED` with "silent acceptance" annotated.
 
-1. The CEO's message was a direct narrowing question or resolution proposal addressed to that seat.
-2. The seat read the message (team notification delivered) and transitioned to idle.
+### Review-mode exception
 
-If uncertainty remains, send ONE direct "confirm or object?" prompt. If still silent, record the disagreement as `RESOLVED` with "silent acceptance" annotated in the log's Resolved-disagreements entry.
-
-This pattern is especially common in the final rounds of cross-talk, where a seat that's posted earlier positions may reach "I have no further objection" without feeling the need to type it. The protocol's default of "written decisions only" still holds for CEO arbitration — silent acceptance is a seat-level signal, not a CEO-level one.
-
-### When to end cross-talk early
-
-- All disagreements RESOLVED → proceed to Phase 4 (which will be trivially empty) and then Phase 5.
-- No progress in a round (all disagreements STUCK with same arguments as the prior round) → declare cross-talk over and proceed to Phase 4 (arbitration).
-- Team has spent 3 rounds → hard stop. Arbitrate.
+Skip Phase 3 entirely unless ≥2 overlapping findings need seats themselves to dedupe. Review seats work disjoint sub-areas; cross-talk is almost always unproductive. See `review-mode.md`.
 
 ## Phase 4 — CEO arbitration
 
-### Decision format
-
-For each unresolved disagreement, write 3–5 sentences:
-
-```
-**Disagreement**: <one line summary of the split>
-**Seats**: <seat-A> vs <seat-B> (+ any additional seats who weighed in)
-**Best argument A**: <their strongest point>
-**Best argument B**: <their strongest point>
-**Decision**: <chosen side, or DEFER>
-**Rationale**: <why, engaging specifically with the loser's argument — don't strawman>
-```
-
-A defer is a legitimate decision. It requires an explicit revisit criterion:
-
-```
-**Decision**: DEFER
-**Revisit when**: <specific measurable criterion, e.g., "feature-X DAU exceeds 1000" or "first bug report hits the cache layer">
-```
-
-### When the decision is DEFER: file a tracker item
-
-A `DEFER` without a filed tracker item is a **silent promise** — prose in the decision log that decays to nothing. Every DEFER needs an action handle.
-
-**When beads is detected** (see Phase 1 detection rule), the revisit criterion is the body of a `bd create` command that runs **immediately**, before the log is written:
-
-```
-bd create \
-  --title="<one-line summary from the disagreement>" \
-  --description="Deferred by council <yyyy-mm-dd-slug>. Revisit when: <criterion>. Context: <short pointer to the loser's argument and why we deferred rather than chose>." \
-  --type=task \
-  --priority=<N>
-```
-
-Priority selection: `0` if the revisit criterion is likely to trip within days; `2` default; `3–4` for speculative revisits. The command emits an ID like `beads-1234`. That ID becomes the `Tracker:` value in the decision log's Deferred-items entry and is also added to the log's frontmatter `linked-tracker-ids` list.
-
-**No filed ID = silent promise = failure mode.** Phase 5 verification catches this (see Teardown sequence).
-
-**When no tracker is detected**, DEFER entries remain prose in the log. No invented commands. The log itself is the only handle — the user is responsible for routing it if they want tracking.
-
-### When the decision is BLOCKED (distinct from DEFER)
-
-Some disagreements resolve to "reject from this decision's scope, not try-later." The re-open condition isn't time or signal — it's a structural change to the problem itself. For example:
-
-- "Requires an upstream library to ship Y before we can parse it safely"
-- "Needs a separate council to establish a safe path for this attack surface"
-- "Gated on an audit that would change the security model"
-- "Out of scope until a different cross-cutting decision lands"
-
-`DEFER` is **expected-later**: time- or signal-based, we'll come back to it when X happens. `BLOCKED` is **out-of-scope-until-structural-change**: the problem shape itself has to change before the item is even actionable.
-
-BLOCKED decisions go into the log's Blocked-items section (not Deferred-items). They are **NOT auto-filed as tracker items** — there's nothing actionable yet; the re-open is gated on a change the council doesn't control. The prose entry is the handle until the structural condition materializes; at that point, a fresh council (or fresh arbitration) is the right response, not reopening this one.
-
-Decision format for BLOCKED:
+### Decision format (debate mode)
 
 ```
 **Disagreement**: <one line>
-**Seats**: <who>
-**Best argument to proceed**: <their point>
-**Decision**: BLOCKED
-**Re-open condition (structural)**: <what external change would have to happen before this becomes in-scope>
-**Rationale**: <why BLOCKED, not DEFER — why time/signal is the wrong trigger>
+**Seats**: <A vs B (+ others who weighed in)>
+**Best argument A**: <their strongest point>
+**Best argument B**: <their strongest point>
+**Decision**: <chosen side | DEFER | BLOCKED>
+**Rationale**: <engages with the loser's argument; no strawmen>
 ```
+
+### `DEFER` requires a revisit criterion + a filed tracker item
+
+```
+**Decision**: DEFER
+**Revisit when**: <specific measurable criterion — "feature-X DAU exceeds 1000", "first bug report hits the cache layer">
+```
+
+A `DEFER` without a filed tracker item is a **silent promise**. When beads is detected, file the tracker item **before** writing the log:
+
+```
+bd create \
+  --title="<summary from disagreement>" \
+  --description="Deferred by council <slug>. Revisit when: <criterion>. Context: <loser's argument + why we deferred>." \
+  --type=task --priority=<N>
+```
+
+ID becomes the `Tracker:` value in the decision log and frontmatter `linked-tracker-ids`. When no tracker is detected, the prose entry in the log is the only handle — user's responsibility to route.
+
+### `BLOCKED` is distinct from `DEFER`
+
+`DEFER` = time-or-signal-triggered revisit. `BLOCKED` = out-of-scope until a structural change to the problem (upstream library ships Y, separate council establishes X, audit changes the security model). BLOCKED decisions are NOT auto-filed as tracker items — there's nothing actionable yet. Prose entry in the log is the handle.
 
 ### When to escalate to the human
 
-Escalate when the decision is:
 - Strategic (product direction, major scope expansion)
 - Budget-adjacent (cost tradeoffs the user hasn't authorized)
-- Legally material (licensing, privacy, regulated industry — and `legal-compliance` flagged it)
-- Cross-team (impacts teams or stakeholders outside the current user's scope)
+- Legally material (`legal-compliance` flagged)
+- Cross-team (affects stakeholders outside the current user's scope)
 
-Escalation format, ≤150 words:
-
-```
-Council hit a deadlock that needs human judgment:
-
-Question: <one line>
-Option A (<champion seats>): <best argument, 1–2 sentences>
-Option B (<champion seats>): <best argument, 1–2 sentences>
-My recommendation: <A or B, 1 sentence>
-Tradeoff: <what we lose either way, 1 sentence>
-```
-
-Use `AskUserQuestion` when A/B/C are cleanly discrete. Plain text when the options branch.
+Escalation format, ≤150 words: question, Option A (champion seats) + best argument, Option B + best argument, CEO's recommendation, tradeoff. Use `AskUserQuestion` for discrete A/B/C; plain text otherwise.
 
 ### When NOT to escalate
 
-Routine technical disagreements are the CEO's to resolve:
-- Naming (flag names, method names, file locations)
-- Internal layering (service boundaries, module decomposition)
-- Implementation tactics (which data structure, which library idiom)
-- Error message text
-- Testing approach
+Naming, internal layering, implementation tactics, error message text, testing approach — CEO resolves.
+
+### Review-mode arbitration
+
+Dedupe overlapping findings. Decide whether merged findings file as one or many tracker items. Bulk-file before teardown. See `review-mode.md`.
 
 ## Phase 5 — Decision log + teardown
 
-### Log path
+### Log preview before save
+
+CEO posts the draft log to chat (**not** the file yet). User replies `save` / `amend <note>` / `discard`. Then persist:
 
 ```
 ~/.claude/councils/<yyyy-mm-dd>-<slug>/log.md
 ```
 
-Create the directory if it doesn't exist. `<slug>` is kebab-case, ≤40 chars, derived from the decision question.
+Create the directory if it doesn't exist. `<slug>` is kebab-case, ≤40 chars, derived from the decision.
 
 ### Log content — executive summary, not transcript
 
-Use `decision-log-template.md`. Never include:
-- Full agent opening positions (just one-liner + verdict per seat)
-- Full cross-talk transcripts (just the RESOLVED/STUCK classification)
-- Verbose narration
-
-Target length: one page.
+Use `decision-log-template.md`. Target length: one page. Never include full opening positions (one-liner + verdict per seat), full cross-talk transcripts (just RESOLVED/STUCK classifications), or verbose narration.
 
 ### Execution plan — merge-conflict discipline
 
-The decision log must close with an **execution plan**, not a freeform follow-up list. The plan is how downstream implementers (another session, a planning skill, or parallel agents) avoid collisions.
+The log closes with an **execution plan**, not a freeform follow-up list. Required:
 
-Required contents:
-
-1. **Ordered task list.** Each task is one atomic unit of work — typically the slice a single implementer takes to green. No "and" in task titles.
-2. **File-ownership mapping.** For every task, name the files it will touch. If a file appears in more than one task, that is a collision signal — resolve it per (3).
-3. **Collision resolution.** For any overlapping file:
-   - **Serialize** — mark one task `depends-on` the other. The second task rebases after the first lands.
-   - **Consolidate** — merge the overlapping tasks into one.
-   - **Partition** — split the file (rarely the right move; only when the file genuinely has two independent responsibilities that the council exposed).
-4. **Shared-surface callouts.** Identify files that are merge-conflict magnets: lockfiles (`package-lock.json`, `Cargo.lock`), manifests (`package.json`, `plugin.json`), shared type definitions, central registries. Assign each to exactly one task; forbid side-touches from other tasks.
-5. **Parallelization advice.** Flag which tasks can run concurrently (no file overlap) versus which must serialize. If the project has agent-teamwork guidelines (e.g., `CLAUDE.md` specifying git worktrees for parallel agents), reference them.
-6. **Branch and rebase discipline.** If more than one branch will be produced, state the merge order into the target branch and who rebases on top of what.
-
-Example (tiny):
-
-```
-### Execution plan
-
-1. **task-A** — Create `src/foo.ts`, `tests/unit/foo.test.ts`. No other task touches these. ✅ Parallel-safe.
-2. **task-B** — Create `src/bar.ts`, `tests/unit/bar.test.ts`. No other task touches these. ✅ Parallel-safe.
-3. **task-C** — Register foo and bar in `src/registry.ts`. Depends on A and B. Shared-surface callout: `src/registry.ts` is this task's exclusive territory. Serialize.
-4. **task-D** — Update `docs/API.md`. Depends on C (documents the registered shape). Parallel-safe with A, B.
-```
+1. **Ordered task list** — each task one atomic unit of work; no "and" in titles.
+2. **File-ownership mapping** — for every task, the files it touches. Overlap is a collision signal.
+3. **Collision resolution** — serialize (depends-on), consolidate (merge tasks), or partition (rare).
+4. **Shared-surface callouts** — lockfiles, manifests, shared registries/types. Each assigned to exactly one task; forbid side-touches.
+5. **Parallelization advice** — flag which tasks can run concurrently. If the project has agent-teamwork guidelines (CLAUDE.md), reference them.
+6. **Branch/rebase discipline** — merge order, who rebases on what.
 
 ### Teardown sequence
 
-1. Send shutdown to all:
-   ```
-   SendMessage(to: "*", message: {type: "shutdown_request", reason: "council concluded"})
-   ```
-2. Wait for each teammate to respond with `shutdown_response`. Approvals terminate their processes.
-3. **DEFER verification (silent-promise guard).** Before any `bd close` or `TeamDelete`, grep the draft log for `DEFER` entries and confirm each has a non-empty `Tracker:` ID. Concretely:
-   ```
-   grep -E '^\s*-\s' <log-path> | grep -i 'tracker:' | grep -iv 'tracker: unfiled'
-   ```
-   The count of matches must equal the number of DEFER decisions recorded in Phase 4. Any `Tracker: unfiled` (or missing `Tracker:`) entry is a silent promise — either file the tracker item now (see Phase 4 "When the decision is DEFER") and update the log, or downgrade the DEFER to a prose note and remove it from the Deferred-items list. Do not proceed past this step with unfiled defers.
-4. **Primary-bead close (beads-detected projects only).** If a primary bead was under debate (recorded as `primary-tracker-id` in the log frontmatter), run `bd close <id>` before `TeamDelete`. If beads reports `blocked by open issues` due to epic dependency-graph inversion, use `--force`. This is a known beads behavior (tracked in the beads project), not a skill bug — surface the `--force` use in the log's appendix so the user sees the workaround was intentional.
-5. Once all have shut down and tracker bookkeeping is complete, call `TeamDelete()`. Team directory and shared task list are removed.
+1. `SendMessage(to: "*", message: {type: "shutdown_request", reason: "council concluded"})`
+2. Wait for each seat's `shutdown_response`.
+3. **Silent-promise guard.** Grep the draft log: every DEFER entry must have a non-empty `Tracker:` ID (or a filed tracker command logged if no tracker present). Unfiled DEFERs: either file now or demote to prose note.
+4. **Primary-bead close (beads projects).** `bd close <id>` before `TeamDelete`. `--force` if beads flags a known epic-dependency inversion — surface in the log's appendix so the user sees the workaround was intentional.
+5. `TeamDelete()`. Team directory + shared task list removed.
 6. Confirm `~/.claude/teams/<team_name>/` is gone; surface the log path to the user.
 
-### Shipping the decision — three paths (CEO orchestrates, never implements)
+### Stopping early
 
-The CEO's role as *design council lead* ends when the decision log is saved. Shipping is a separate phase that may be performed by the same team re-briefed, a fresh implementation crew, or a downstream session. Pick the path in this order of preference; in every path the CEO stays off the keyboard for application code and tests.
+User says "stop the council" or equivalent at any phase:
 
-1. **Warm-team ship (preferred).** The design-council team is already warm with the decision, the binding constraints, and the execution plan. Before running `TeamDelete`, re-brief each teammate with their task from the plan — file ownership, dependency edges, branch strategy, acceptance criteria. The roles naturally translate: `test-engineer` writes the tests, `principal-engineer` wires the seams, `ui-ux-designer` reviews copy diffs, `security-engineer` audits validation landing, `historian` verifies post-merge that precedent held. Parallelism is the big payoff — independent file-partitioned tasks run concurrently, which is exactly what the execution plan's collision discipline enables. The CEO continues to orchestrate: assigns tasks, routes blockers, pairs seats for code review, arbitrates post-implementation disagreements. Teardown happens after ship, not between design and ship.
-2. **Fresh-crew ship.** If the original roster doesn't match the implementation shape (e.g., the debate was mostly design seats but implementation needs 3× test-engineer parallelism, or the council included an opt-in `legal-compliance` seat that has no implementation role), call `TeamDelete`, then `TeamCreate` a new team named `crew-<yyyy-mm-dd>-<slug>` with implementer-shaped agents. Spawn prompts include the decision log path so each implementer reads the arbitrated decisions verbatim before claiming a task. The CEO role (orchestration) stays with the invoking Claude.
-3. **Handoff to a separate session.** If implementation will be long-running, or if the user wants to review the log before shipping, save the log, shut the team down, surface the log path + a one-paragraph handoff summary, and stop. A new session picks up from the log via `planning-and-task-breakdown` or `incremental-implementation`.
+1. CEO broadcasts `shutdown_request` with reason.
+2. Saves a partial log with `status: halted` in frontmatter, noting which phase the halt hit and what was in-flight.
+3. `TeamDelete`.
 
-**Non-negotiable across all three paths:** the CEO does not type source code, author implementation tests, claim tracker tickets on their own behalf, or run TDD cycles. Those are seat-work. The CEO assigns them, routes them, and arbitrates disagreements that emerge during implementation — that's it. Filing *tracker items* that record the council's own deferred items is record-keeping, not implementation, and remains in scope.
+Halted logs are durable: user may restart with a different roster/question referencing them.
 
-### Path selection signals
+### Shipping the decision
 
-- **Warm-team ship**: debate was tight (≤2 cross-talk rounds), execution plan has ≥3 tasks with clean file partitions, original roster skills cover implementation.
-- **Fresh-crew ship**: roster mismatch, or the design was contentious enough that some seats' context should not carry forward.
-- **Handoff**: user asks for a review gate, or expected implementation spans > 1 day of work.
-
-### What about deferred tasks?
-
-See Phase 4 "When the decision is DEFER: file a tracker item" for the operational rule. Summary: if a tracker is detected (today: beads), deferred items are filed at arbitration time and their IDs land in the log's Deferred-items list + frontmatter `linked-tracker-ids`. If no tracker is detected, the prose entry in the log is the only handle and the user is responsible for routing it. The log is always the durable reference; a tracker item, when filed, is the action handle.
+See `implementation-handoff.md` for the three ship paths (warm-team / fresh-crew / handoff), the 6 production gotchas, and the merge primitive (`git checkout <SHA> -- <files>` + `git commit --no-verify -C <SHA>` — not cherry-pick for mixed-base worktrees).

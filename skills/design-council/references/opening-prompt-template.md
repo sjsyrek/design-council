@@ -10,7 +10,13 @@ Paste-ready scaffold for Phase 1. Fill every slot before spawning teammates.
 
 ## Binding Constraints
 
-<Verbatim from: CLAUDE.md (current cwd), referenced plan/spec files, project memory (bd memories / auto-memory), commit conventions, privacy context (public vs private remote). Do not paraphrase. Include at least:>
+The CEO writes the full binding-constraints payload **once** to `~/.claude/councils/<slug>/brief.md`, then references it from every spawn prompt. Identical `Read` calls hit the 5-minute prompt cache across parallel seats. This section of the opening prompt is just a pointer:
+
+```
+BINDING CONSTRAINTS: Read ~/.claude/councils/<slug>/brief.md before posting your opening.
+```
+
+What goes into `brief.md` (verbatim, no paraphrasing):
 
 - **Coding conventions**: <style guide / linting / naming rules from CLAUDE.md>
 - **Test discipline**: <TDD required? Mutation ritual? Integration coverage requirements?>
@@ -18,6 +24,9 @@ Paste-ready scaffold for Phase 1. Fill every slot before spawning teammates.
 - **Privacy / publication**: <repo remote visibility; what must not leak to commit history>
 - **Version / release constraints**: <semver rules, release gates, branch protection>
 - **Project memory relevant to this decision**: <e.g., "prior decision recorded in bd memory X">
+- **Memory-vs-skill contradictions flagged** (important): <if any project memory directly contradicts the skill's prescriptions, flag and follow memory — memory is project ground truth>
+
+If no CLAUDE.md exists in the invoking project, say so explicitly in `brief.md`. It's common, not a blocker.
 
 ## Non-Goals
 
@@ -45,7 +54,7 @@ Default: "All seats have posted a verdict. No BLOCK outstanding. All CONCERNS ei
 
 ## How this is used
 
-Every teammate's spawn prompt includes this opening prompt verbatim. The CEO does not paraphrase it per seat — every seat sees the same constraints. This prevents the failure mode where binding constraints get lost in paraphrasing to fit a specific seat's framing.
+Every teammate's spawn prompt includes this opening prompt's Decision/Non-goals/Success sections verbatim, plus a pointer to `~/.claude/councils/<slug>/brief.md` for binding constraints. The CEO does not paraphrase — every seat sees the same source material. This prevents the failure mode where binding constraints get lost in paraphrasing to fit a specific seat's framing.
 
 When drafting: write as if the user were going to read it. Clarity here cascades into the whole debate.
 
@@ -53,7 +62,7 @@ When drafting: write as if the user were going to read it. Clarity here cascades
 
 ## Review mode variant
 
-Use this variant when the council is auditing a codebase or design surface for issues — not debating a single decision. See `SKILL.md` "Review mode variant" for when to invoke.
+Use this variant when the council is auditing a codebase or design surface for issues — not debating a single decision. See `references/review-mode.md` for when to invoke and the full protocol adjustments.
 
 ---
 

@@ -39,7 +39,7 @@ Do **NOT** invoke for: bug fixes, single-specialist questions, library/tool pick
 | 10 | `accessibility-specialist` | a11y, keyboard nav, screen reader, contrast |
 | 11 | `technical-writer` | Docs, in-app help, CHANGELOG, API reference |
 
-**Opt-ins:** `devops-engineer` (deploy risk, CI/CD, rollback), `finops-engineer` (cloud/API cost), `legal-compliance` (privacy, licensing), `domain-expert` (subject-matter SME), `historian` (codebase precedent on mature repos).
+**Opt-ins:** `devops-engineer` (deploy risk, CI/CD, rollback), `sre-engineer` (production reliability, SLOs, blast radius, rollback validation), `finops-engineer` (cloud/API cost, unit economics, resource lifecycle), `legal-compliance` (privacy, licensing), `domain-expert` (subject-matter SME), `historian` (codebase precedent on mature repos).
 
 **Dynamic sizing is the default, not an exception.** No runtime UI → drop ui-ux + a11y. No user input / no infra → drop security + platform. Internal-tooling defaults can be 4–6 seats. Full 11+opt-ins only when every role-lens applies. The CEO decides at Phase 0 and surfaces the roster in the plan card.
 

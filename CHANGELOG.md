@@ -2,6 +2,16 @@
 
 All notable changes to the design-council plugin are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] — 2026-05-28
+
+Slash-command standardization across the `sjsyrek/claude-plugins` marketplace. `design-council`, `red-team`, and the new `compliance-panel` plugin all now expose both proactive trigger-phrase invocation and an explicit `/<plugin-name>` slash command, so users have one consistent invocation idiom regardless of which plugin they reach for.
+
+### Added
+
+- **`/design-council` slash command** (`commands/design-council.md`) with optional `[decision-or-focus]` argument. The slash invocation still routes through Phase 0 plan card — the user confirms roster, models, and budget before any seat spawns.
+- **README "Slash command" section** documenting the new invocation pathway alongside the existing trigger phrases.
+- **`SKILL.md` "What the user sees" invocation note** linking the slash command and trigger phrases as equivalent entry points.
+
 ## [0.3.0] — 2026-05-27
 
 Two roster additions surfaced by a contributor running design-councils on infrastructure decisions ([@Tazmainiandevil](https://github.com/Tazmainiandevil), PR #1): a dedicated reliability seat (`sre-engineer`) and an expanded `finops-engineer` covering the infrastructure FinOps layer. Both remain opt-ins; the default 11-seat roster is unchanged.

@@ -1,7 +1,7 @@
 ---
 name: design-council
 description: Use when the user says "convene the council", "design debate", "council review", "get the team together", "run a design review", or "debate this design"; OR describes a cross-domain decision or review with real stakes — architecture pivot, API surface, pre-release hardening, codebase-wide audit. Convenes parallel role-specialized agents (default Opus) who debate in real time via inter-agent messaging while the invoking Claude serves as CEO. Do NOT invoke for single-specialist questions, bug fixes, or quick library picks.
-version: 0.2.1
+version: 0.3.0
 ---
 
 # design-council

@@ -51,7 +51,7 @@ Natural trigger phrases: "convene the council", "design debate", "council review
 
 **Full 11 seats:** `principal-engineer` · `platform-engineer` · `integration-engineer` · `test-engineer` · `qa-engineer` · `security-engineer` · `performance-engineer` · `product-manager` · `ui-ux-designer` · `accessibility-specialist` · `technical-writer`
 
-**Opt-ins** (CEO adds based on decision shape): `devops-engineer` · `finops-engineer` · `legal-compliance` · `domain-expert` · `historian`
+**Opt-ins** (CEO adds based on decision shape): `devops-engineer` · `sre-engineer` · `finops-engineer` · `legal-compliance` · `domain-expert` · `historian`
 
 **Dynamic sizing is the default.** No runtime UI → drop `ui-ux-designer` + `accessibility-specialist`. No user input / no infra → drop `security-engineer` + `platform-engineer` too. Internal-tooling decisions often land on 4–6 seats. The plan card (Phase 0) shows the chosen roster; you can adjust before spawn.
 

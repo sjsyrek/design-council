@@ -2,6 +2,20 @@
 
 All notable changes to the design-council plugin are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] — 2026-05-27
+
+Two roster additions surfaced by a contributor running design-councils on infrastructure decisions ([@Tazmainiandevil](https://github.com/Tazmainiandevil), PR #1): a dedicated reliability seat (`sre-engineer`) and an expanded `finops-engineer` covering the infrastructure FinOps layer. Both remain opt-ins; the default 11-seat roster is unchanged.
+
+### Added
+
+- **`sre-engineer` opt-in seat.** Reliability lens distinct from `devops-engineer`'s deployment-lifecycle lens: blast radius (direct + cascading downstream), rollback validated by execution time not just designed ("we have rolled back and it took N minutes" is the bar, not "we can"), SLO/SLI ownership and error-budget policy, graceful degradation vs. hard failure, MTTD relative to blast radius, toil introduced without an automation path, capacity assumptions backed by data. Four vetoes: untested rollback, silent failure modes, SLO-violating design, unverified cascading blast radius. Activate alongside `devops-engineer` on decisions with production reliability stakes (new services, significant load-profile changes, shared infrastructure).
+- **`sre`↔`devops` pairing hint** in the `SKILL.md` opt-in line so the CEO doesn't spawn both seats redundantly on lower-stakes decisions. `README.md` opt-ins list now also includes `sre-engineer`.
+
+### Changed
+
+- **`finops-engineer` extended to cover the infrastructure FinOps layer.** Existing scope (product/API/LLM costs, quotas, tiering) preserved verbatim; new ownership areas added — cost allocation and tagging, unit economics (cost per business-value unit), rate optimization (reserved/committed vs. on-demand), resource lifecycle (TTLs, orphan prevention), workload placement (managed vs. self-managed TCO), licensing, anomaly coverage, dev/staging cost parity. Two new vetoes: untagged/unallocated resources, missing anomaly coverage. Opening framing sharpened — spend should be *proportional to business value*, not just minimized.
+- **`plugin.json` + `SKILL.md` frontmatter version → 0.3.0.** MINOR per Conventional Commits: additive features, no breaking change.
+
 ## [0.2.1] — 2026-04-24
 
 Documentation-only patch release. Three small protocol-text tweaks surfaced during the first fresh-session dogfood of 0.2.0 (an end-to-end council on a real data-loss P0 in the beads tracker). No behavioral change; no code change.

@@ -66,10 +66,10 @@ The plan card displays the chosen models per seat so you never discover them mid
 ## Slash command
 
 ```
-/design-council [decision-or-focus]
+/design-council:design-council [decision-or-focus]
 ```
 
-Optional argument: the decision or codebase area to debate (e.g. `/design-council should we extract the billing service into its own repo?`). Without the argument, the CEO asks for the focus before drafting the Phase 0 plan card. Trigger phrases ("convene the council", "design debate", etc.) also work for proactive invocation.
+Optional argument: the decision or codebase area to debate (e.g. `/design-council:design-council should we extract the billing service into its own repo?`). Without the argument, the CEO asks for the focus before drafting the Phase 0 plan card. Trigger phrases ("convene the council", "design debate", etc.) also work for proactive invocation.
 
 ## Integrations
 

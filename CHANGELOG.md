@@ -2,6 +2,15 @@
 
 All notable changes to the design-council plugin are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1] — 2026-05-28
+
+Documentation-only patch. The README "Slash command" section and the SKILL.md "What the user sees" invocation note now show the actual namespaced form (`/design-council:design-council`) instead of the bare form. Claude Code namespaces every plugin slash command as `/<plugin>:<command>` to avoid collisions across third-party plugins; the bare `/design-council` form (advertised in 0.4.0) was never a valid invocation.
+
+### Fixed
+
+- **README**: `/design-council [decision-or-focus]` → `/design-council:design-council [decision-or-focus]` in the Slash command section and example.
+- **SKILL.md**: same fix in the "What the user sees" invocation note.
+
 ## [0.4.0] — 2026-05-28
 
 Slash-command standardization across the `sjsyrek/claude-plugins` marketplace. `design-council`, `red-team`, and the new `compliance-panel` plugin all now expose both proactive trigger-phrase invocation and an explicit `/<plugin-name>` slash command, so users have one consistent invocation idiom regardless of which plugin they reach for.

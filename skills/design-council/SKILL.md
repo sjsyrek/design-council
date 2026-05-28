@@ -1,7 +1,7 @@
 ---
 name: design-council
 description: Use when the user says "convene the council", "design debate", "council review", "get the team together", "run a design review", or "debate this design"; OR describes a cross-domain decision or review with real stakes — architecture pivot, API surface, pre-release hardening, codebase-wide audit. Convenes parallel role-specialized agents (default Opus) who debate in real time via inter-agent messaging while the invoking Claude serves as CEO. Do NOT invoke for single-specialist questions, bug fixes, or quick library picks.
-version: 0.4.0
+version: 0.4.1
 ---
 
 # design-council
@@ -17,7 +17,7 @@ Convene a **parallel team of role-specialized agents** to debate a non-trivial t
 5. **Output.** One-page decision log at `~/.claude/councils/<yyyy-mm-dd>-<slug>/log.md` (outside any repo).
 6. **Stop early.** Say "stop the council" at any phase — CEO broadcasts shutdown, saves a `status: halted` partial log, cleans up.
 
-Invocation: `/design-council [decision-or-focus]` or any of the trigger phrases below.
+Invocation: `/design-council:design-council [decision-or-focus]` or any of the trigger phrases below.
 
 ## When to invoke
 

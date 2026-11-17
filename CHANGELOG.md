@@ -2,6 +2,29 @@
 
 All notable changes to the design-council plugin are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **Seats spawn into the session's implicit agent team.** Phase 2 is now one `Agent(name: <seat>, model: …, effort: …)` call per seat; there is no team-creation step. A new "Requirements" section tells the CEO to check `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` before Phase 0 and stop (rather than change settings) when it is unset.
+- **Handshake is the first line of the message** (`HANDSHAKE <seat>: …`), not a `summary` value. Phase 2.5 drops the empty-`tmuxPaneId` check and ends by telling every seat that peer DMs are open; seats wait for that before DMing each other, because a DM sent to a seat still starting up was missed in testing.
+- **Teardown and "stop the council" send `shutdown_request` to each seat by name.** Broadcast (`to: "*"`) is no longer supported by `SendMessage`.
+- **Plan card shows effort as well as model per seat.** Teammates now inherit the CEO's model unless the spawn names one, so the skill sets `model` on every seat explicitly.
+- **Seat action items go in the final `SendMessage`** (an "Action items" list) instead of `TaskCreate`, which current models don't have. All 17 role briefs updated; the redundant "Go idle between turns" line is removed from each.
+- **Implementation handoff:** worktree implementers are spawned without `name` (named spawns are teammates and run in the team's cwd); fresh-crew ship no longer recreates a team.
+- **Protocol wording** trimmed for current models: delivery rules explain why instead of shouting, the "sequential-thinking regression" guard is gone, and idle notifications are described as they now behave (last turn text plus `[to <peer>]` markers).
+- **`plugin.json` declares `engines: {"claude-code": ">=2.1.178"}`**, the first release with the implicit team.
+
+### Removed
+
+- **`commands/design-council.md`.** The skill is already invocable as `/design-council:design-council`, so the command was a second copy listed alongside it. Its `argument-hint` and "ask for a focus, then start at the plan card" instruction moved into `SKILL.md`. The invocation is unchanged.
+- **`TeamCreate` / `TeamDelete` steps** (removed from Claude Code in 2.1.178) and the `team_name` and `run_in_background` spawn parameters.
+- **"Related skills" section**, which pointed at skills that don't ship with Claude Code or this plugin.
+
+### Fixed
+
+- **`brief.md` rationale.** It claimed the shared `Read` hit the prompt cache across seats; the seats' prompts diverge before that read, so the real saving is the CEO writing constraints once. README, protocol, and the opening-prompt template corrected.
+
 ## [0.4.1] — 2026-05-28
 
 Documentation-only patch. The README "Slash command" section and the SKILL.md "What the user sees" invocation note now show the actual namespaced form (`/design-council:design-council`) instead of the bare form. Claude Code namespaces every plugin slash command as `/<plugin>:<command>` to avoid collisions across third-party plugins; the bare `/design-council` form (advertised in 0.4.0) was never a valid invocation.

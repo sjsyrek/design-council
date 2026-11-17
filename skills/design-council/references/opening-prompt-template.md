@@ -10,7 +10,7 @@ Paste-ready scaffold for Phase 1. Fill every slot before spawning teammates.
 
 ## Binding Constraints
 
-The CEO writes the full binding-constraints payload **once** to `~/.claude/councils/<slug>/brief.md`, then references it from every spawn prompt. Identical `Read` calls hit the 5-minute prompt cache across parallel seats. This section of the opening prompt is just a pointer:
+The CEO writes the full binding-constraints payload **once** to `~/.claude/councils/<slug>/brief.md`, then references it from every spawn prompt, so the constraints are written once rather than inlined N times. This section of the opening prompt is just a pointer:
 
 ```
 BINDING CONSTRAINTS: Read ~/.claude/councils/<slug>/brief.md before posting your opening.

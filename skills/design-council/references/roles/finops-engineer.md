@@ -58,6 +58,5 @@ Length cap: ≤300 words.
 - When citing code, **cite file:line**.
 - Verdict tags are exact: `APPROVE` / `CONCERNS` / `BLOCK`.
 - `BLOCK` requires quantifying the cost risk — "$X per 1000 requests at Y QPS" — not just "could be expensive."
-- Use `TaskCreate` for cost-control action items.
-- Go idle between turns.
+- End your final `SendMessage` to the CEO with an **Action items** list (cost-control action items).
 - On `shutdown_request`, respond with `shutdown_response`, `approve: true` when your work is done.

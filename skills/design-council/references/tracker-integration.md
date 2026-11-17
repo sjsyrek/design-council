@@ -20,7 +20,7 @@ Run from the invoking project's git root. Either succeeds → beads is this proj
 
 - **Phase 1 brief:** runs `bd memories`, `bd ready`, and `bd show <id>` for every bead ID the user references. Output is inlined verbatim in the opening prompt.
 - **Phase 4 arbitration:** every `DEFER` decision is translated to a `bd create --title=... --description=... --type=task --priority=N` command and executed before Phase 5 teardown. The filed bead ID is recorded in the log and the frontmatter `linked-tracker-ids` list.
-- **Phase 5 teardown:** if a primary bead was under debate, `bd close <id>` runs before `TeamDelete`. Use `--force` if beads flags a known epic-dependency inversion (that's a beads behavior, not a skill bug).
+- **Phase 5 teardown:** if a primary bead was under debate, `bd close <id>` runs before the seats are shut down. Use `--force` if beads flags a known epic-dependency inversion (that's a beads behavior, not a skill bug).
 
 ## When no tracker is detected (common case)
 
@@ -28,11 +28,11 @@ Deferred items remain prose entries in the decision log. The CEO does not invent
 
 ## Two-list discipline (when a persistent tracker is present)
 
-`TeamCreate` creates `~/.claude/tasks/<team>/` for session-scoped coordination between teammates during the debate. Persistent work (existing issues, follow-ups, epics) lives in the tracker. Never duplicate. Never file session-scoped coordination items as persistent tracker items.
+Session-scoped coordination during the debate lives in `brief.md` and the seats' messages — including each seat's **Action items** list. (Current models don't get the shared task-list tools, so the council doesn't rely on them.) Persistent work (existing issues, follow-ups, epics) lives in the tracker. Never duplicate. Never file a seat's action items as tracker items unless the CEO decides they survive the council (e.g. as a DEFER).
 
 ## Silent-promise guard
 
-A `DEFER` with no filed tracker item decays to nothing. Phase 5 verification (before `TeamDelete`) greps the log for DEFER entries and confirms each has a non-empty `Tracker:` ID. Missing IDs must be filed now or the DEFER must be downgraded to a prose note and removed from the Deferred-items list. Do not teardown past this gate with unfiled defers.
+A `DEFER` with no filed tracker item decays to nothing. Phase 5 verification (before shutdown) greps the log for DEFER entries and confirms each has a non-empty `Tracker:` ID. Missing IDs must be filed now or the DEFER must be downgraded to a prose note and removed from the Deferred-items list. Do not teardown past this gate with unfiled defers.
 
 ## Adapter contract (for future trackers)
 

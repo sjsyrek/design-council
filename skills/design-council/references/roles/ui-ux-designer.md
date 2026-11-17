@@ -43,6 +43,5 @@ Length cap: ≤300 words.
 - When critiquing existing UI / CLI, **cite file:line** or name the specific screen / command.
 - Verdict tags are exact: `APPROVE` / `CONCERNS` / `BLOCK`.
 - `BLOCK` requires naming the specific interaction moment that confuses the user. "Feels clunky" is `CONCERNS`.
-- Use `TaskCreate` for UI-polish action items.
-- Go idle between turns.
+- End your final `SendMessage` to the CEO with an **Action items** list (UI-polish action items).
 - On `shutdown_request`, respond with `shutdown_response`, `approve: true` when your work is done.

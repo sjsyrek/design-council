@@ -4,14 +4,14 @@ This reference expands the phase skeleton from `SKILL.md`. Consult when the deba
 
 ## Phase 0 — Plan card (before any spawn)
 
-Before `TeamCreate`, the CEO shows the user a **plan card** and waits for confirmation:
+Before any seat spawns, the CEO shows the user a **plan card** and waits for confirmation:
 
 ```
 About to convene design-council:
 
 Mode:         <debate | review>
 Roster:       <N> seats (<list of slugs>)
-Models:       <per-seat — default Opus on synthesis seats, Sonnet on analytical>
+Models:       <per-seat model + effort — default Opus on synthesis seats, Sonnet on analytical>
 Opt-ins:      <any added — devops / finops / legal-compliance / domain-expert / historian>
 Rough budget: ~<est. tokens>, ~<est. wall-clock>
 Opening question:
@@ -92,7 +92,7 @@ Dynamic roster sizing is a feature, not a warning: match seat count to domain co
 
 ### Write the shared brief artifact
 
-The CEO writes the concatenated binding constraints to `~/.claude/councils/<slug>/brief.md` **once**. Every spawn prompt tells the seat to `Read` that path. Identical `Read` results hit the 5-minute prompt cache across parallel spawns — recovers ~7–12k tokens on 8-seat councils with constraint-heavy projects, at zero correctness cost.
+The CEO writes the concatenated binding constraints to `~/.claude/councils/<slug>/brief.md` **once**. Every spawn prompt tells the seat to `Read` that path. The saving is in the CEO's output: it writes the constraints once instead of inlining them into N spawn prompts. (The seats' prompts diverge at the role brief, so the `Read` itself is not shared through the prompt cache.)
 
 ### Draft the opening prompt
 
@@ -108,17 +108,13 @@ Use `opening-prompt-template.md`. Four sections:
 ### The multi-tool-call template
 
 ```
-TeamCreate(team_name: "council-2026-04-19-session-cache-ttl",
-           description: "Debate: session-cache TTL policy",
-           agent_type: "team-lead")
-
-Agent(team_name: "...", name: "principal-engineer",   subagent_type: "general-purpose", model: "opus",    run_in_background: true, prompt: <spawn prompt>)
-Agent(team_name: "...", name: "platform-engineer",    subagent_type: "general-purpose", model: "opus",    run_in_background: true, prompt: <spawn prompt>)
-Agent(team_name: "...", name: "integration-engineer", subagent_type: "general-purpose", model: "opus",    run_in_background: true, prompt: <spawn prompt>)
-... (remaining mandatory seats + opt-ins)
+Agent(name: "principal-engineer",   subagent_type: "general-purpose", model: "opus",   effort: "high", description: "Council seat: principal-engineer",   prompt: <spawn prompt>)
+Agent(name: "platform-engineer",    subagent_type: "general-purpose", model: "sonnet",                 description: "Council seat: platform-engineer",    prompt: <spawn prompt>)
+Agent(name: "integration-engineer", subagent_type: "general-purpose", model: "opus",                   description: "Council seat: integration-engineer", prompt: <spawn prompt>)
+... (remaining seats + opt-ins)
 ```
 
-**All in one message.** Sequential spawns violate the parallel-first principle.
+There is no team-creation step: the session's implicit team exists whenever `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is set, and `name` is what makes a spawn a teammate. Omit `team_name` (accepted but ignored) and `run_in_background` (no longer a parameter). Issue all spawns in one message so seats start together.
 
 ### The spawn-prompt assembly
 
@@ -139,37 +135,35 @@ DECISION TO DEBATE:
 
 ---
 
-PROTOCOL CONTRACT (do not deviate):
+PROTOCOL CONTRACT:
 
-1. SendMessage(to: "team-lead") is the ONLY channel to the CEO. Plain-text output is invisible and is discarded at idle.
-2. FIRST thing: send a 1-line handshake via SendMessage(to: "team-lead", summary: "started", message: "Started on <area>."). Without this, you are indistinguishable from a silent-spawn failure.
-3. Final position/findings MUST be delivered via SendMessage. Writing as plain text then going idle drops them on the floor.
-4. Idle summaries are ≤200 chars. Do not put substantive content there.
-5. Protocol responses (shutdown_response, plan_approval_response) MUST use their structured JSON form — never prose. A prose ack does not close the protocol state and will block teardown. Example shutdown: SendMessage(to: "team-lead", message: {type: "shutdown_response", request_id: "<id>", approve: true}).
-6. Peer DMs are allowed — SendMessage(to: "<peer-name>", ...). Other seats active: <list>.
-7. Debate protocol: open with ≤300-word position paper, verdict tag APPROVE | CONCERNS | BLOCK, concrete file:line refs when critiquing. BLOCK requires a concrete scenario. In Review mode: no verdict tags; emit findings per format in references/review-mode.md.
+1. Reach the CEO with SendMessage(to: "team-lead"). The CEO only sees your last turn's text in an idle notice, and other seats see nothing you don't message to them — so anything that matters goes through SendMessage.
+2. First action: SendMessage(to: "team-lead", summary: "handshake", message: "HANDSHAKE <your-seat>: started on <area>."). Until it arrives, the CEO can't tell you from a spawn that never started.
+3. Deliver your position or findings via SendMessage to team-lead. End with an "Action items" list if you have any.
+4. Answer a shutdown_request with the structured form, echoing its request_id: SendMessage(to: "team-lead", message: {type: "shutdown_response", request_id: "<id>", approve: true}). A prose acknowledgement does not end your process.
+5. Peer DMs: SendMessage(to: "<peer-name>", ...). Wait until the CEO says peer DMs are open — a seat that is still starting up can miss a DM. Other seats: <list>.
+6. Debate protocol: open with a ≤300-word position paper, verdict tag APPROVE | CONCERNS | BLOCK, concrete file:line refs when critiquing. BLOCK requires a concrete scenario. In Review mode: no verdict tags; emit findings per the format in references/review-mode.md.
 ```
 
-The universal protocol contract (the 4 delivery rules + peer-DM + debate vs review) is canonical **here**. SKILL.md references this section by path rather than duplicating it.
+The protocol contract (delivery rules + peer-DM + debate vs review) is canonical **here**. SKILL.md summarizes it and points to this section.
 
 ## Phase 2.5 — Handshake verification (do not skip)
 
-The `Agent` tool can return `[Tool result missing due to internal error]` and still register the teammate with an empty `tmuxPaneId`. Slot reserved, no process started. Without verification, the CEO waits cross-talk rounds for seats that never existed. Observed at a 3/13 rate in one session.
+A spawn can be registered without its process ever starting (historically: an `Agent` result of `[Tool result missing due to internal error]` with the member still listed in the team config). Without verification, the CEO waits cross-talk rounds for seats that never existed.
 
 Verification, bounded to ~60s total:
 
-1. **Count handshakes** — incoming `SendMessage(summary: "started", ...)` against the roster.
-2. **Inspect team config** — `~/.claude/teams/<team_name>/config.json`. Any member with `"tmuxPaneId": ""` after ~30s has not actually spawned.
-3. **Remediate silent-spawn failures** — re-spawn once with the same prompt; if still failing, drop the seat and note the uncovered domain in the Phase 5 log.
-4. **Verify late handshakes** — seats that spawned but haven't handshook in ~30s: send one `SendMessage(to: <seat>, message: "Acknowledge with a 1-line handshake per contract. No findings yet.")`. Still silent after 30s → drop.
+1. **Count handshakes** — incoming messages starting `HANDSHAKE <seat>:` against the roster. Any `Agent` call that returned an error is an immediate failure.
+2. **Re-spawn once** — a seat with no handshake after ~30s gets one nudge (`SendMessage(to: <seat>, message: "Send your HANDSHAKE line per the contract. No findings yet.")`). Still silent after another ~30s → re-spawn once with the same prompt; if that fails too, drop the seat and note the uncovered domain in the Phase 5 log.
+3. **Open peer DMs** — once the roster is settled, send each seat (one `SendMessage` per seat; there is no broadcast) the final roster and "Peer DMs are open."
 
 The CEO emits a structured status line before proceeding:
 
 ```
-HANDSHAKE: 8/8 ok | silent-spawn=[] | empty-pane=[] | verdict=PROCEED
+HANDSHAKE: 8/8 ok | silent-spawn=[] | verdict=PROCEED
 ```
 
-Grep-able; telemetry-friendly; distinguishes this state from cross-talk silence.
+Grep-able, and distinguishes this state from cross-talk silence. The team config lives at `~/.claude/teams/session-<session-id-prefix>/config.json` if you need to inspect members, but handshakes are the signal.
 
 ### Silent-spawn failure vs silent-acceptance
 
@@ -184,7 +178,7 @@ The handshake disambiguates: handshake missing = spawn failure; handshake presen
 
 ### How idle notifications work
 
-Every teammate goes idle after each turn. The system auto-delivers idle notifications to the CEO: last message, short summary of peer DMs sent by that teammate. The CEO does NOT poll an inbox — idle notifications arrive as conversation turns.
+Every teammate goes idle after each turn. The harness delivers an idle notification to the CEO carrying the teammate's last turn text (`result`) and, when it DMed a peer that turn, a `[to <peer>] <summary>` marker. The CEO does not poll an inbox — notifications and messages arrive as conversation turns.
 
 ### Routing moves (pick one per disagreement per round)
 
@@ -203,7 +197,7 @@ Every teammate goes idle after each turn. The system auto-delivers idle notifica
    SendMessage(to: "<seat_in_track_A>", message: "Your track (with <B>) converged on X. A parallel track (<C>, <D>) converged on Y. These may be terminological. Does X mean <framing 1> or <framing 2>? One-sentence answer.")
    ```
    Do NOT reopen peer DMs; pin vocabulary across tracks.
-5. **Broadcast (sparingly).** O(team-size) cost; reserve for genuine all-seats pivots.
+5. **All-seats message (sparingly).** One `SendMessage` per seat — broadcast (`to: "*"`) is no longer supported. O(team-size) cost; reserve for genuine all-seats pivots.
 
 ### Round closure
 
@@ -300,20 +294,18 @@ The log closes with an **execution plan**, not a freeform follow-up list. Requir
 
 ### Teardown sequence
 
-1. `SendMessage(to: "*", message: {type: "shutdown_request", reason: "council concluded"})`
-2. Wait for each seat's `shutdown_response`.
-3. **Silent-promise guard.** Grep the draft log: every DEFER entry must have a non-empty `Tracker:` ID (or a filed tracker command logged if no tracker present). Unfiled DEFERs: either file now or demote to prose note.
-4. **Primary-bead close (beads projects).** `bd close <id>` before `TeamDelete`. `--force` if beads flags a known epic-dependency inversion — surface in the log's appendix so the user sees the workaround was intentional.
-5. `TeamDelete()`. Team directory + shared task list removed.
-6. Confirm `~/.claude/teams/<team_name>/` is gone; surface the log path to the user.
+1. **Silent-promise guard.** Grep the draft log: every DEFER entry must have a non-empty `Tracker:` ID (or a filed tracker command logged if no tracker present). Unfiled DEFERs: either file now or demote to prose note.
+2. **Primary-bead close (beads projects).** `bd close <id>`. `--force` if beads flags a known epic-dependency inversion — surface in the log's appendix so the user sees the workaround was intentional.
+3. Send each seat `SendMessage(to: "<seat>", message: {type: "shutdown_request", reason: "council concluded"})` — one call per seat, all in one message.
+4. Wait for each seat's `shutdown_response`. A seat that rejects or stays silent: one reminder, then report it to the user by name.
+5. Surface the log path to the user. There is no team to delete: the session's implicit team ends with the session.
 
 ### Stopping early
 
 User says "stop the council" or equivalent at any phase:
 
-1. CEO broadcasts `shutdown_request` with reason.
+1. CEO sends `shutdown_request` with a reason to each seat by name.
 2. Saves a partial log with `status: halted` in frontmatter, noting which phase the halt hit and what was in-flight.
-3. `TeamDelete`.
 
 Halted logs are durable: user may restart with a different roster/question referencing them.
 

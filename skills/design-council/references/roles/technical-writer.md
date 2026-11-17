@@ -44,8 +44,7 @@ Length cap: ≤300 words.
 - When citing docs / help text, **cite file:line** or command name.
 - Verdict tags are exact: `APPROVE` / `CONCERNS` / `BLOCK`.
 - `BLOCK` requires naming the specific doc surface that would become incorrect or missing.
-- Use `TaskCreate` for doc-update items.
-- Go idle between turns.
+- End your final `SendMessage` to the CEO with an **Action items** list (doc-update items).
 - On `shutdown_request`, respond with `shutdown_response`, `approve: true` when your work is done.
 
 ## Note

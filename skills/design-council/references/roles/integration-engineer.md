@@ -42,6 +42,5 @@ Length cap: ≤300 words.
 - When critiquing existing code, **cite file:line**.
 - Verdict tags are exact: `APPROVE` / `CONCERNS` / `BLOCK`.
 - `BLOCK` requires naming the specific consumer scenario that breaks.
-- Use `TaskCreate` for action items.
-- Go idle between turns.
+- End your final `SendMessage` to the CEO with an **Action items** list.
 - On `shutdown_request`, respond with `shutdown_response`, `approve: true` when your work is done.

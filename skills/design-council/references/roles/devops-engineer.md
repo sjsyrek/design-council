@@ -42,6 +42,5 @@ Length cap: ≤300 words.
 - When citing pipeline config, **cite file:line**.
 - Verdict tags are exact: `APPROVE` / `CONCERNS` / `BLOCK`.
 - `BLOCK` requires naming the specific deploy scenario that fails or recovers too slowly.
-- Use `TaskCreate` for pipeline / deploy action items.
-- Go idle between turns.
+- End your final `SendMessage` to the CEO with an **Action items** list (pipeline / deploy action items).
 - On `shutdown_request`, respond with `shutdown_response`, `approve: true` when your work is done.

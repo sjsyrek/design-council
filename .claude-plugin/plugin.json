@@ -16,5 +16,8 @@
     "decision-log",
     "architecture",
     "skill"
-  ]
+  ],
+  "engines": {
+    "claude-code": ">=2.1.178"
+  }
 }

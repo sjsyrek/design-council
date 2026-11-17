@@ -6,8 +6,8 @@ The debate protocol (Phases 1–4) produces a plan. Executing the plan in parall
 
 ## Three ship paths (pick one)
 
-1. **Warm-team ship (preferred when the roster fits).** The council team is already warm with the decision, binding constraints, and execution plan. Before running `TeamDelete`, re-brief each teammate with their task from the plan — file ownership, dependency edges, branch strategy, acceptance criteria. Roles translate: `test-engineer` writes tests, `principal-engineer` wires seams, `security-engineer` audits validation landing, `historian` verifies post-merge precedent.
-2. **Fresh-crew ship.** If the original roster doesn't match the implementation shape, call `TeamDelete`, then `TeamCreate` a new `crew-<yyyy-mm-dd>-<slug>` with implementer-shaped agents. Each spawn prompt includes the decision log path so implementers read arbitrated decisions verbatim before claiming a task.
+1. **Warm-team ship (preferred when the roster fits).** The council seats are already warm with the decision, binding constraints, and execution plan. Before sending shutdown requests, re-brief each seat with its task from the plan — file ownership, dependency edges, branch strategy, acceptance criteria. Roles translate: `test-engineer` writes tests, `principal-engineer` wires seams, `security-engineer` audits validation landing, `historian` verifies post-merge precedent. Seats that will edit files in parallel still need worktree isolation — see gotcha §1.
+2. **Fresh-crew ship.** If the original roster doesn't match the implementation shape, shut the seats down, then spawn implementer-shaped agents per §1. Each spawn prompt includes the decision log path so implementers read arbitrated decisions verbatim before starting.
 3. **Handoff to a separate session.** Long-running implementation or user wants to review the log first. Save, shut down, surface log path + handoff summary, stop. Next session picks up via `planning-and-task-breakdown` or `incremental-implementation`.
 
 **Non-negotiable across all paths:** the CEO does not type source code, author implementation tests, or run TDD cycles. Orchestration, routing, arbitration, record-keeping. Filing tracker items for the council's own deferred items is record-keeping, not implementation.
@@ -20,11 +20,11 @@ The debate protocol (Phases 1–4) produces a plan. Executing the plan in parall
 
 ## Gotchas observed in production
 
-### 1. `team_name` silently overrides `isolation: "worktree"`
+### 1. Teammates don't get worktree isolation
 
-When both are set on an `Agent` call, the member inherits the team's `cwd` (the invoking project root) and worktree isolation is ignored. Two members spawned this way race on the working tree, the index, commit hooks (pre-commit `git add -A` sweeps other agents' unstaged work), and direct commits on the user's branch.
+Teammates run in the team's `cwd` (the invoking project root). Observed when spawns still took `team_name`: combined with `isolation: "worktree"`, the member inherited the team cwd and isolation was ignored. Today `team_name` is ignored and `name` is what makes a spawn a teammate, so treat `name` + `isolation` the same way. Two members sharing the checkout race on the working tree, the index, commit hooks (pre-commit `git add -A` sweeps other agents' unstaged work), and direct commits on the user's branch.
 
-**Fix:** for implementation, spawn Agents with `isolation: "worktree"` and NO `team_name`. Each gets a sandbox at `.claude/worktrees/agent-<id>/`. Preserve seat identity via prompt: *"You are the X seat of council-<slug>, re-briefed as implementer for lane Y."* CEO imports their reported SHAs in the declared merge order.
+**Fix:** for implementation, spawn Agents with `isolation: "worktree"` and **no `name`**. Each gets a sandbox at `.claude/worktrees/agent-<id>/` and runs as a background subagent; message it by the agent ID from its spawn result. Preserve seat identity via prompt: *"You are the X seat of council-<slug>, re-briefed as implementer for lane Y."* CEO imports their reported SHAs in the declared merge order.
 
 ### 2. Worktree-agent cwd leaks into parent Bash
 
@@ -80,10 +80,10 @@ Proven on `council-2026-04-23-docs-audit`: 7 clean commits from 6 worktree agent
 
 | Symptom | Likely cause | Fix |
 |---------|--------------|-----|
-| No handshakes after 60s | Silent `Agent` spawn failure (tmuxPaneId empty in team config) | Re-spawn once; drop if still silent, note uncovered domain in log |
-| Handshake but no position paper | Seat outputting plain text then going idle | Send: "Deliver your position via SendMessage; plain text is invisible." |
+| No handshakes after 60s | Agent teams not enabled, or silent spawn failure | Check `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`; otherwise re-spawn once, drop if still silent, note uncovered domain in log |
+| Handshake but no position paper | Seat wrote its position as turn text (visible to the CEO only in the idle notice) | Send: "Deliver your position via SendMessage so the other seats can see it." |
 | Cross-talk round stuck >5min | Two seats waiting for each other | Pair-and-narrow via CEO SendMessage; or declare STUCK and arbitrate |
 | `cherry-pick` cascade-fails across lanes | Mixed-base worktrees | Switch to `checkout <SHA> -- <files>` + `commit --no-verify -C <SHA>` |
 | Parent Bash pwd inside a worktree | Worktree cwd leak (§2) | Prefix every CEO git command with `cd /absolute/path &&` |
 | Hook sweeps tracker-state files | §4 pollution | CEO-side: unstage + delete state file before each merge commit |
-| User wants to stop mid-council | Protocol gap | Broadcast `shutdown_request`, save partial log with `status: halted`, `TeamDelete` |
+| User wants to stop mid-council | Protocol gap | Send `shutdown_request` to each seat by name, save partial log with `status: halted` |

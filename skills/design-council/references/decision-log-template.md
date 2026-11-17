@@ -10,7 +10,7 @@ Paste-ready scaffold for Phase 5. Save to `~/.claude/councils/<yyyy-mm-dd>-<slug
 ---
 date: YYYY-MM-DD
 slug: <kebab-case-slug>
-team: council-<yyyy-mm-dd>-<slug>
+council: <yyyy-mm-dd>-<slug>
 status: concluded
 primary-tracker-id:          # e.g., "beads-3mj6"; omit if the council was not debating a specific tracker item
 linked-tracker-ids: []       # e.g., ["beads-v76j", "beads-dx9u"]; follow-ups filed during this council
@@ -131,8 +131,8 @@ If nothing rises to this bar, omit the section. But default to capturing when th
 
 ## Notes for the CEO when writing
 
-- **Length cap is one page.** If the decision required extensive arbitration, still one page — link out to the opening-prompt file or the team's task list dump for details. The log itself stays executive-length.
-- **No full transcripts.** If someone later wants the full debate, the team's task list and conversation logs were captured during the run (preserved until `TeamDelete` runs); they can be archived separately if the user wants.
+- **Length cap is one page.** If the decision required extensive arbitration, still one page — link out to `brief.md` or the opening-prompt file for details. The log itself stays executive-length.
+- **No full transcripts.** If someone later wants the full debate, the session and teammate transcripts hold it; they can be archived separately if the user wants.
 - **Verdict column uses the exact strings** `APPROVE` / `CONCERNS` / `BLOCK`. Don't paraphrase — consistent strings let future tooling grep the log.
 - **Rationale must engage the loser's argument.** "We picked A because we liked it" is not a rationale. "We picked A because B's best point — X — is mitigated by Y that we're adopting alongside A" is a rationale.
 - **Deferred items are promises.** Record the revisit criterion crisply. "Someday" is not a criterion.

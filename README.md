@@ -11,21 +11,21 @@ Design Council spawns each seat as an **independent Claude agent with its own co
 ## How it works
 
 0. **Plan card (you confirm before anything spawns).** The CEO shows a one-screen card: mode (debate / review), roster with per-seat model, rough token/wall-clock budget, and the drafted opening question. You reply `go`, `swap X for Y`, `drop X`, `add X`, or `abort`.
-1. **Brief (single context, yours).** The CEO gathers binding constraints from `CLAUDE.md`, referenced specs, and the project's memory system (including beads if detected). **Skill self-audit runs here too:** the CEO greps auto-memory and prior decision logs for entries about the council skill itself; any memory that contradicts the skill's own prescriptions wins (memory is written after real failures, so it's ground truth). Everything lands **once** in `~/.claude/councils/<slug>/brief.md` — every seat's spawn prompt points to that path, so prompt caching hits across parallel spawns (~7–12k tokens saved per 8-seat council).
-2. **Convene (parallel fan-out).** In one multi-tool-call message, the CEO spawns every seat via `TeamCreate` + `Agent(... run_in_background: true, team_name: ...)`. Every spawn prompt inlines the four delivery rules (handshake, SendMessage-only, final-via-SendMessage, idle-summary-short).
-3. **Handshake verify (Phase 2.5).** The CEO counts incoming handshake DMs, inspects team config for empty `tmuxPaneId`s, remediates silent-spawn failures, and emits a structured `HANDSHAKE: N/N ok | verdict=PROCEED` line.
+1. **Brief (single context, yours).** The CEO gathers binding constraints from `CLAUDE.md`, referenced specs, and the project's memory system (including beads if detected). **Skill self-audit runs here too:** the CEO greps auto-memory and prior decision logs for entries about the council skill itself; any memory that contradicts the skill's own prescriptions wins (memory is written after real failures, so it's ground truth). Everything lands **once** in `~/.claude/councils/<slug>/brief.md` — every seat's spawn prompt points to that path instead of inlining the constraints.
+2. **Convene (parallel fan-out).** In one message, the CEO spawns every seat as a teammate via `Agent(name: <seat>, model: ..., ...)` — the session's implicit agent team needs no setup step. Every spawn prompt inlines the delivery rules (handshake first, SendMessage for anything that matters, structured shutdown response, no peer DMs until the CEO opens them).
+3. **Handshake verify (Phase 2.5).** The CEO counts incoming `HANDSHAKE` messages, re-spawns or drops seats that never started, emits a structured `HANDSHAKE: N/N ok | verdict=PROCEED` line, then opens peer DMs.
 4. **Cross-talk (peer DMs, bounded).** Seats post opening verdicts (`APPROVE` / `CONCERNS` / `BLOCK`), then DM each other directly via `SendMessage` to argue the live disagreements. The CEO routes — pairs disagreers, invites tiebreakers, forces narrowing questions, bridges converged tracks. Hard cap of 3 rounds. Review mode skips cross-talk by default.
 5. **Arbitrate (CEO writes).** For every disagreement cross-talk didn't resolve, the CEO writes a 3–5 sentence decision with rationale engaging the loser's argument. Strategic / budget / legal / cross-team calls escalate to the user.
-6. **Log + teardown.** The CEO posts the draft decision log to chat for your `save` / `amend` / `discard`. On save: `~/.claude/councils/<yyyy-mm-dd>-<slug>/log.md` (outside any project repo). Includes opening prompt, roster, resolved disagreements, arbitration decisions, deferred items with tracker IDs, and an execution plan with file-ownership mapping. Team shuts down via `shutdown_request`; `TeamDelete` removes the shared task list.
+6. **Log + teardown.** The CEO posts the draft decision log to chat for your `save` / `amend` / `discard`. On save: `~/.claude/councils/<yyyy-mm-dd>-<slug>/log.md` (outside any project repo). Includes opening prompt, roster, resolved disagreements, arbitration decisions, deferred items with tracker IDs, and an execution plan with file-ownership mapping. Each seat is shut down with a `shutdown_request`.
 
-**Stop early** at any phase by saying "stop the council" — the CEO broadcasts shutdown, saves a partial log with `status: halted`, and cleans up.
+**Stop early** at any phase by saying "stop the council" — the CEO sends each seat a shutdown request and saves a partial log with `status: halted`.
 
 ## Benefits
 
 - **Genuine parallelism.** Independent contexts reasoning concurrently, not sequential turns. Wall-clock cost ≈ slowest seat, not sum of seats.
 - **Structurally independent perspectives.** Each seat is a separate Claude with its own context — no priming bleeds across roles.
 - **Direct peer debate.** `SendMessage` lets seats argue with each other without round-tripping through the CEO, which is how real cross-discipline reviews work.
-- **Cheap fan-out via prompt cache.** The shared `brief.md` pattern means identical constraints hit the 5-minute prompt cache across every spawn, recovering meaningful tokens on constraint-heavy projects.
+- **Constraints written once.** The shared `brief.md` pattern means the CEO writes binding constraints once rather than inlining them into every spawn prompt.
 - **Durable artifact outside any repo.** Decision logs are portable — they outlive branch pivots, repo renames, and migrations. `~/.claude/councils/` is per-user artifact space.
 - **Merge-conflict-aware execution plan.** Phase 5 closes with file-ownership mapping so parallel implementers — spawned as fresh agents with `isolation: "worktree"` after teardown — can ship the decision without colliding. See `references/implementation-handoff.md` for the full playbook (including why `git checkout <SHA> -- <files>` beats `cherry-pick` for mixed-base handoffs).
 
@@ -57,11 +57,13 @@ Natural trigger phrases: "convene the council", "design debate", "council review
 
 ## Model defaults (surfaced up-front)
 
+Teammates run on the CEO's model unless the spawn names one, so the CEO sets a model (and, where it matters, an effort level) on every seat:
+
 - **Opus** for synthesis-heavy seats (`principal-engineer`, `product-manager`, `technical-writer`, `historian`).
 - **Sonnet** for analytical seats (`test-engineer`, `performance-engineer`, `platform-engineer`, `qa-engineer`).
 - **All-Opus** when the user frames the task as "high quality bar" or "ship to production."
 
-The plan card displays the chosen models per seat so you never discover them mid-debate.
+The plan card displays the chosen model and effort per seat so you never discover them mid-debate.
 
 ## Slash command
 
@@ -103,12 +105,9 @@ The marketplace lives at [sjsyrek/claude-plugins](https://github.com/sjsyrek/cla
 
 ## Runtime requirements
 
-- `TeamCreate` / `TeamDelete` — team lifecycle + shared task list
-- `Agent` with `name`, `run_in_background`, `team_name`, `model` — spawns each seat as a peer
-- `SendMessage` — CEO-to-seat and seat-to-seat DMs, plus broadcast
-- `TaskCreate` — shared task list
-
-Some of these are deferred tools in Claude Code; they're resolved at spawn time.
+- Claude Code **2.1.178 or later**, with agent teams enabled: `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` in your environment or the `env` block of `settings.json`. Each session then has one implicit team; there is no team setup step.
+- `Agent` with `name`, `model`, and `effort` — spawns each seat as a teammate
+- `SendMessage` — CEO-to-seat and seat-to-seat DMs, and the shutdown protocol
 
 ## Decision log location
 

@@ -45,6 +45,5 @@ Length cap: ≤300 words.
 - When citing existing code, **cite file:line**.
 - Verdict tags are exact: `APPROVE` / `CONCERNS` / `BLOCK`.
 - `BLOCK` requires naming the specific WCAG failure or inaccessible flow. "Feels inaccessible" is `CONCERNS`.
-- Use `TaskCreate` for a11y mitigation items.
-- Go idle between turns.
+- End your final `SendMessage` to the CEO with an **Action items** list (a11y mitigation items).
 - On `shutdown_request`, respond with `shutdown_response`, `approve: true` when your work is done.

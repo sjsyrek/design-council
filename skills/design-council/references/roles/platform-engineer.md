@@ -42,6 +42,5 @@ Length cap: ≤300 words.
 - When critiquing existing code, **cite file:line**.
 - Verdict tags are exact: `APPROVE` / `CONCERNS` / `BLOCK`.
 - `BLOCK` requires a concrete scenario. "Might not scale" is `CONCERNS`; "scans N=unbounded on every request at path foo.ts:42" is `BLOCK`.
-- Use `TaskCreate` for action items.
-- Go idle between turns.
+- End your final `SendMessage` to the CEO with an **Action items** list.
 - On `shutdown_request`, respond with `shutdown_response`, `approve: true` when your work is done.

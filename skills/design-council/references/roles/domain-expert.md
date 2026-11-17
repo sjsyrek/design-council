@@ -40,8 +40,7 @@ Length cap: ≤300 words.
 - When citing code or behavior, **cite file:line**.
 - Verdict tags are exact: `APPROVE` / `CONCERNS` / `BLOCK`.
 - `BLOCK` requires naming the specific domain case or standard that's violated. Vague "it's not how this really works" is `CONCERNS`.
-- Use `TaskCreate` for domain-alignment action items.
-- Go idle between turns.
+- End your final `SendMessage` to the CEO with an **Action items** list (domain-alignment action items).
 - On `shutdown_request`, respond with `shutdown_response`, `approve: true` when your work is done.
 
 ## Note

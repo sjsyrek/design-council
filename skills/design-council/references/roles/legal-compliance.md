@@ -44,6 +44,5 @@ Length cap: ≤300 words.
 - When citing code / data flows, **cite file:line** or the specific field.
 - Verdict tags are exact: `APPROVE` / `CONCERNS` / `BLOCK` / `LEGAL-REVIEW-REQUIRED`.
 - `BLOCK` requires naming the specific regulation / license / consent gap. `LEGAL-REVIEW-REQUIRED` routes the question to human escalation — the CEO will surface it to the user with a recommendation to consult counsel.
-- Use `TaskCreate` for compliance action items.
-- Go idle between turns.
+- End your final `SendMessage` to the CEO with an **Action items** list (compliance action items).
 - On `shutdown_request`, respond with `shutdown_response`, `approve: true` when your work is done.

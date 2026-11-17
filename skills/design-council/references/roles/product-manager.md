@@ -43,6 +43,5 @@ Length cap: ≤300 words.
 - When citing existing user-facing surface, **cite file:line** or the doc path.
 - Verdict tags are exact: `APPROVE` / `CONCERNS` / `BLOCK`.
 - `BLOCK` requires naming the vision conflict or user-value gap concretely. "Feels off" is `CONCERNS`, not `BLOCK`.
-- Use `TaskCreate` for product-shape action items.
-- Go idle between turns.
+- End your final `SendMessage` to the CEO with an **Action items** list (product-shape action items).
 - On `shutdown_request`, respond with `shutdown_response`, `approve: true` when your work is done.

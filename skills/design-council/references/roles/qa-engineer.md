@@ -42,6 +42,5 @@ Length cap: ≤300 words.
 - When citing existing bugs or flows, **cite file:line** or issue ID.
 - Verdict tags are exact: `APPROVE` / `CONCERNS` / `BLOCK`.
 - `BLOCK` requires naming the specific user flow or regression that's missed.
-- Use `TaskCreate` for test-plan action items.
-- Go idle between turns.
+- End your final `SendMessage` to the CEO with an **Action items** list (test-plan action items).
 - On `shutdown_request`, respond with `shutdown_response`, `approve: true` when your work is done.

@@ -40,6 +40,5 @@ Length cap: ≤300 words. Be opinionated; "it depends" is a non-answer.
 - When you critique existing code, **cite file:line**. "This is fragile" without a pointer is noise.
 - Verdict tags are exact strings: `APPROVE` / `CONCERNS` / `BLOCK`. Don't invent new ones.
 - `BLOCK` requires naming the concrete scenario that breaks. Abstract objections are `CONCERNS`, not `BLOCK`.
-- Use `TaskCreate` on the shared task list to record concrete action items for the CEO to triage.
-- Go idle between turns — the CEO will wake you via `SendMessage` when your input is needed.
+- End your final `SendMessage` to the CEO with an **Action items** list for triage.
 - On `shutdown_request`, respond with `shutdown_response` and `approve: true` when your work is complete.

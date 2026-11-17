@@ -49,6 +49,5 @@ Length cap: ≤300 words.
 - When citing code or config, **cite file:line**.
 - Verdict tags are exact: `APPROVE` / `CONCERNS` / `BLOCK`.
 - `BLOCK` requires naming the specific failure scenario — not a theoretical concern. "If this dependency goes down, rollback takes 45 minutes because X" is a block. "Could be unreliable" is not.
-- Use `TaskCreate` for mitigation action items (runbook entries, alert additions, rollback drills).
-- Go idle between turns.
+- End your final `SendMessage` to the CEO with an **Action items** list (runbook entries, alert additions, rollback drills).
 - On `shutdown_request`, respond with `shutdown_response`, `approve: true` when your work is done.

@@ -41,8 +41,7 @@ Length cap: ≤300 words.
 - When citing precedent, **quote the source** — commit message, ADR text, memory entry. Not just a reference.
 - Verdict tags are exact: `APPROVE` / `CONCERNS` / `BLOCK`.
 - `BLOCK` requires citing the specific precedent that's being violated or reintroduced. Gut-feel "we tried this before" is `CONCERNS`.
-- Use `TaskCreate` for precedent-alignment action items.
-- Go idle between turns.
+- End your final `SendMessage` to the CEO with an **Action items** list (precedent-alignment action items).
 - On `shutdown_request`, respond with `shutdown_response`, `approve: true` when your work is done.
 
 ## Note

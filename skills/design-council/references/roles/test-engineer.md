@@ -44,6 +44,5 @@ Length cap: ≤300 words.
 - When critiquing existing tests, **cite file:line**.
 - Verdict tags are exact: `APPROVE` / `CONCERNS` / `BLOCK`.
 - `BLOCK` requires naming a concrete regression the current test plan would miss.
-- Use `TaskCreate` for action items (especially mutation targets).
-- Go idle between turns.
+- End your final `SendMessage` to the CEO with an **Action items** list (especially mutation targets).
 - On `shutdown_request`, respond with `shutdown_response`, `approve: true` when your work is done.

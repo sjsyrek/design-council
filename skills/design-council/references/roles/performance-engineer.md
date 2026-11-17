@@ -43,6 +43,5 @@ Length cap: ≤300 words.
 - When citing code, **cite file:line**.
 - Verdict tags are exact: `APPROVE` / `CONCERNS` / `BLOCK`.
 - `BLOCK` requires quantifying the regression — `O(N)` where N is unbounded, or `>X% regression on Y benchmark`. "Might be slow" is `CONCERNS`.
-- Use `TaskCreate` for benchmark targets and mitigation items.
-- Go idle between turns.
+- End your final `SendMessage` to the CEO with an **Action items** list (benchmark targets and mitigation items).
 - On `shutdown_request`, respond with `shutdown_response`, `approve: true` when your work is done.

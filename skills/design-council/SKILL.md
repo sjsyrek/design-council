@@ -24,6 +24,8 @@ Invocation: `/design-council:design-council [decision-or-focus]` or any of the t
 
 Agent teams must be enabled: `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` (Claude Code 2.1.178+). Check with `echo $CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` before Phase 0. If it is unset, tell the user — seats spawned without it are ordinary subagents that cannot DM each other — and stop; enabling it is a user settings change, not something to do on their behalf.
 
+Also confirm `SendMessage` is among your tools; a host or permission setup can withhold it even with teams on. Without it, seats can't handshake, debate, or answer a shutdown request — tell the user, and run only with their consent as independent position papers with no cross-talk.
+
 Each session has exactly one implicit team. There is no team-creation or team-deletion step: an `Agent` call with a `name` adds that seat as a teammate; the CEO is `team-lead`.
 
 ## When to invoke

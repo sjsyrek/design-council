@@ -15,6 +15,10 @@ All notable changes to the design-council plugin are documented here. The format
 - **Protocol wording** trimmed for current models: delivery rules explain why instead of shouting, the "sequential-thinking regression" guard is gone, and idle notifications are described as they now behave (last turn text plus `[to <peer>]` markers).
 - **`plugin.json` declares `engines: {"claude-code": ">=2.1.178"}`**, the first release with the implicit team.
 
+### Fixed
+
+- **Requirements check also confirms `SendMessage` is available.** A host or permission setup can withhold it even with agent teams on; seats then can't handshake, debate or answer a shutdown request. The CEO now tells the user and runs only with consent, as independent position papers. Surfaced by the new end-to-end eval, whose council wrote it into its own emergent-insights appendix.
+
 ### Removed
 
 - **`commands/design-council.md`.** The skill is already invocable as `/design-council:design-council`, so the command was a second copy listed alongside it. Its `argument-hint` and "ask for a focus, then start at the plan card" instruction moved into `SKILL.md`. The invocation is unchanged.

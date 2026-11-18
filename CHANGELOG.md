@@ -4,6 +4,10 @@ All notable changes to the design-council plugin are documented here. The format
 
 ## [Unreleased]
 
+### Added
+
+- **Eval suite** (`evals/`) for `claude plugin eval`: plan-card, teams-off and should-not-fire cases, plus one end-to-end three-seat council on the implicit agent team that checks named spawns, handshakes, per-seat peer-DM opening and shutdown, and the absence of `TeamCreate`/`TeamDelete`/broadcast. `evals/results/` is gitignored. See `evals/README.md`.
+
 ### Changed
 
 - **Seats spawn into the session's implicit agent team.** Phase 2 is now one `Agent(name: <seat>, model: …, effort: …)` call per seat; there is no team-creation step. A new "Requirements" section tells the CEO to check `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` before Phase 0 and stop (rather than change settings) when it is unset.

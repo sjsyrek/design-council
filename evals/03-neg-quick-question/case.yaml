@@ -1,0 +1,12 @@
+schema_version: "1.0"
+name: 03-neg-quick-question
+description: Should NOT fire. A single-file factual question must not convene a council.
+tags: [tier1, negative, teams-on]
+context:
+  scaffold_script: scaffold.sh
+execution:
+  prompt: "What does getToken in src/auth.js do today? One or two sentences."
+  max_turns: 8
+  timeout_seconds: 300
+  allowed_tools: [Skill, Read, Glob, Grep]
+runs: 3

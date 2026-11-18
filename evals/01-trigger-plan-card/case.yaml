@@ -1,0 +1,12 @@
+schema_version: "1.0"
+name: 01-trigger-plan-card
+description: With agent teams on, a trigger phrase invokes design-council, which stops at the Phase 0 plan card without spawning seats.
+tags: [tier1, plan-card, teams-on]
+context:
+  scaffold_script: scaffold.sh
+execution:
+  prompt: "Convene the council on PROPOSAL.md: should deployctl cache tokens on disk or use the OS keychain?"
+  max_turns: 30
+  timeout_seconds: 900
+  allowed_tools: [Skill, Read, Glob, Grep, Bash]
+runs: 3

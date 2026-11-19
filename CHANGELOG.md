@@ -4,6 +4,8 @@ All notable changes to the design-council plugin are documented here. The format
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-11-19
+
 ### Added
 
 - **Eval suite** (`evals/`) for `claude plugin eval`: plan-card, teams-off and should-not-fire cases, plus one end-to-end three-seat council on the implicit agent team that checks named spawns, handshakes, per-seat peer-DM opening and shutdown, and the absence of `TeamCreate`/`TeamDelete`/broadcast. Because those tools no longer exist, a call-count check can't fail; the case also fails when the CEO searches for them with `ToolSearch`, which is what the 0.4.1 skill did. `evals/results/` is gitignored. See `evals/README.md`.
@@ -19,12 +21,6 @@ All notable changes to the design-council plugin are documented here. The format
 - **Protocol wording** trimmed for current models: delivery rules explain why instead of shouting, the "sequential-thinking regression" guard is gone, and idle notifications are described as they now behave (last turn text plus `[to <peer>]` markers).
 - **`plugin.json` declares `engines: {"claude-code": ">=2.1.178"}`**, the first release with the implicit team.
 
-### Fixed
-
-- **Seats reach the CEO as `main`.** On Claude Code 2.1.328, `SendMessage(to: "team-lead")` fails with "No agent named 'team-lead' is reachable"; the lead answers to `main`. The seat contract now uses `main` and falls back to `team-lead` on older versions. Phase 2.5 sends "Peer DMs are open." to each seat as its own message before any cross-talk question; in the failing run the CEO folded it into a single cross-talk message and two seats never got it. Found by the end-to-end eval.
-- **Decision log is capped at ~600 words.** The one-page target was routinely missed (about 1,100 words in the end-to-end eval), because the template's own scaffold was longer than a page. The template now gives each section a word budget, keeps a compact task/file/dependency table as the execution plan, requires a concrete revisit criterion on every DEFER, has no appendix, and tells the CEO to count the draft with `wc -w` before the preview. Per-task requirements (acceptance criteria, tests, edge cases, base-branch checks) moved out of the log into a new implementer-brief template in `implementation-handoff.md`, written at ship time.
-- **Requirements check also confirms `SendMessage` is available.** A host or permission setup can withhold it even with agent teams on; seats then can't handshake, debate or answer a shutdown request. The CEO now tells the user and runs only with consent, as independent position papers. Surfaced by the new end-to-end eval, whose council wrote it into its own emergent-insights appendix.
-
 ### Removed
 
 - **`commands/design-council.md`.** The skill is already invocable as `/design-council:design-council`, so the command was a second copy listed alongside it. Its `argument-hint` and "ask for a focus, then start at the plan card" instruction moved into `SKILL.md`. The invocation is unchanged.
@@ -32,6 +28,10 @@ All notable changes to the design-council plugin are documented here. The format
 - **"Related skills" section**, which pointed at skills that don't ship with Claude Code or this plugin.
 
 ### Fixed
+
+- **Seats reach the CEO as `main`.** On Claude Code 2.1.328, `SendMessage(to: "team-lead")` fails with "No agent named 'team-lead' is reachable"; the lead answers to `main`. The seat contract now uses `main` and falls back to `team-lead` on older versions. Phase 2.5 sends "Peer DMs are open." to each seat as its own message before any cross-talk question; in the failing run the CEO folded it into a single cross-talk message and two seats never got it. Found by the end-to-end eval.
+- **Decision log is capped at ~600 words.** The one-page target was routinely missed (about 1,100 words in the end-to-end eval), because the template's own scaffold was longer than a page. The template now gives each section a word budget, keeps a compact task/file/dependency table as the execution plan, requires a concrete revisit criterion on every DEFER, has no appendix, and tells the CEO to count the draft with `wc -w` before the preview. Per-task requirements (acceptance criteria, tests, edge cases, base-branch checks) moved out of the log into a new implementer-brief template in `implementation-handoff.md`, written at ship time.
+- **Requirements check also confirms `SendMessage` is available.** A host or permission setup can withhold it even with agent teams on; seats then can't handshake, debate or answer a shutdown request. The CEO now tells the user and runs only with consent, as independent position papers. Surfaced by the new end-to-end eval, whose council wrote it into its own emergent-insights appendix.
 
 - **`brief.md` rationale.** It claimed the shared `Read` hit the prompt cache across seats; the seats' prompts diverge before that read, so the real saving is the CEO writing constraints once. README, protocol, and the opening-prompt template corrected.
 

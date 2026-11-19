@@ -21,6 +21,7 @@ All notable changes to the design-council plugin are documented here. The format
 
 ### Fixed
 
+- **Decision log is capped at ~600 words.** The one-page target was routinely missed (about 1,100 words in the end-to-end eval), because the template's own scaffold was longer than a page. The template now gives each section a word budget, keeps a compact task/file/dependency table as the execution plan, requires a concrete revisit criterion on every DEFER, has no appendix, and tells the CEO to count the draft with `wc -w` before the preview. Per-task requirements (acceptance criteria, tests, edge cases, base-branch checks) moved out of the log into a new implementer-brief template in `implementation-handoff.md`, written at ship time.
 - **Requirements check also confirms `SendMessage` is available.** A host or permission setup can withhold it even with agent teams on; seats then can't handshake, debate or answer a shutdown request. The CEO now tells the user and runs only with consent, as independent position papers. Surfaced by the new end-to-end eval, whose council wrote it into its own emergent-insights appendix.
 
 ### Removed

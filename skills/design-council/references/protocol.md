@@ -279,18 +279,19 @@ Create the directory if it doesn't exist. `<slug>` is kebab-case, ≤40 chars, d
 
 ### Log content — executive summary, not transcript
 
-Use `decision-log-template.md`. Target length: one page. Never include full opening positions (one-liner + verdict per seat), full cross-talk transcripts (just RESOLVED/STUCK classifications), or verbose narration.
+Use `decision-log-template.md`. **Cap: ~600 words** (frontmatter excluded). Before posting the preview, count it with `wc -w <<'EOF'` … `EOF` and cut until it fits; include the count in the preview line ("Draft log, 540 words"). Never include full opening positions (one-liner + verdict per seat), full cross-talk transcripts (just the outcome), verbose narration, or per-task requirements.
+
+**Per-task requirements are not log content.** Acceptance criteria, test expectations, edge cases a seat insisted on, and base-branch instructions go into each implementer's brief at ship time (`implementation-handoff.md` "Implementer briefs"). While the debate runs, note them in your working context or in `~/.claude/councils/<slug>/brief.md`; the log keeps only the task row.
 
 ### Execution plan — merge-conflict discipline
 
-The log closes with an **execution plan**, not a freeform follow-up list. Required:
+The log closes with a compact **execution plan** (≤120 words), not a freeform follow-up list:
 
-1. **Ordered task list** — each task one atomic unit of work; no "and" in titles.
-2. **File-ownership mapping** — for every task, the files it touches. Overlap is a collision signal.
-3. **Collision resolution** — serialize (depends-on), consolidate (merge tasks), or partition (rare).
-4. **Shared-surface callouts** — lockfiles, manifests, shared registries/types. Each assigned to exactly one task; forbid side-touches.
-5. **Parallelization advice** — flag which tasks can run concurrently. If the project has agent-teamwork guidelines (CLAUDE.md), reference them.
-6. **Branch/rebase discipline** — merge order, who rebases on what.
+1. **Ordered task table** — each task one atomic unit of work (no "and" in titles), the files it touches, and what it depends on. File overlap between tasks is a collision signal: serialize (depends-on) or consolidate (merge tasks).
+2. **Shared surfaces** — lockfiles, manifests, shared registries/types, each assigned to exactly one task.
+3. **Merge order** — one line: which task merges first and what rebases on what.
+
+Parallelization advice, side-touch prohibitions, and the per-task acceptance criteria go into the implementer briefs, not the log.
 
 ### Teardown sequence
 
@@ -311,4 +312,4 @@ Halted logs are durable: user may restart with a different roster/question refer
 
 ### Shipping the decision
 
-See `implementation-handoff.md` for the three ship paths (warm-team / fresh-crew / handoff), the 6 production gotchas, and the merge primitive (`git checkout <SHA> -- <files>` + `git commit --no-verify -C <SHA>` — not cherry-pick for mixed-base worktrees).
+See `implementation-handoff.md` for the three ship paths (warm-team / fresh-crew / handoff), the implementer-brief template that carries each task's requirements, the 6 production gotchas, and the merge primitive (`git checkout <SHA> -- <files>` + `git commit --no-verify -C <SHA>` — not cherry-pick for mixed-base worktrees).

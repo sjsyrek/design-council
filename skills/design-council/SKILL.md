@@ -7,7 +7,7 @@ version: 0.4.1
 
 # design-council
 
-Convene a **parallel team of role-specialized agents** to debate a non-trivial technical decision (or audit a codebase in Review mode) in real time. The invoking Claude is **CEO**: convenes, routes peer-DMs, arbitrates deadlocks, writes a one-page decision log. Every teammate has its own context — not a subagent inheriting yours — so disagreement is structural, not simulated.
+Convene a **parallel team of role-specialized agents** to debate a non-trivial technical decision (or audit a codebase in Review mode) in real time. The invoking Claude is **CEO**: convenes, routes peer-DMs, arbitrates deadlocks, writes a ~600-word decision log. Every teammate has its own context — not a subagent inheriting yours — so disagreement is structural, not simulated.
 
 ## What the user sees
 
@@ -15,7 +15,7 @@ Convene a **parallel team of role-specialized agents** to debate a non-trivial t
 2. **Handshake status.** After spawn, the CEO emits one line — e.g. `HANDSHAKE: 8/8 ok | verdict=PROCEED` — so you know every seat actually started.
 3. **Cross-talk.** Seats post opening verdicts, DM each other to debate, CEO routes deadlocks. Bounded: 3 rounds max.
 4. **Log preview.** Before saving, the CEO posts the draft decision log to chat. Reply `save`, `amend <note>`, or `discard`.
-5. **Output.** One-page decision log at `~/.claude/councils/<yyyy-mm-dd>-<slug>/log.md` (outside any repo).
+5. **Output.** A ~600-word decision log at `~/.claude/councils/<yyyy-mm-dd>-<slug>/log.md` (outside any repo).
 6. **Stop early.** Say "stop the council" at any phase — CEO sends each seat a shutdown request, saves a `status: halted` partial log.
 
 Invocation: `/design-council:design-council [decision-or-focus]` or any of the trigger phrases below. If invoked with no decision or focus, ask the user for one, then start at Phase 0 — the plan card is never skipped just because the invocation was explicit.

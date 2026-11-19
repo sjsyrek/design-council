@@ -6,11 +6,28 @@ The debate protocol (Phases 1–4) produces a plan. Executing the plan in parall
 
 ## Three ship paths (pick one)
 
-1. **Warm-team ship (preferred when the roster fits).** The council seats are already warm with the decision, binding constraints, and execution plan. Before sending shutdown requests, re-brief each seat with its task from the plan — file ownership, dependency edges, branch strategy, acceptance criteria. Roles translate: `test-engineer` writes tests, `principal-engineer` wires seams, `security-engineer` audits validation landing, `historian` verifies post-merge precedent. Seats that will edit files in parallel still need worktree isolation — see gotcha §1.
+1. **Warm-team ship (preferred when the roster fits).** The council seats are already warm with the decision, binding constraints, and execution plan. Before sending shutdown requests, re-brief each seat with its task using the implementer brief below — file ownership, dependency edges, branch strategy, acceptance criteria. Roles translate: `test-engineer` writes tests, `principal-engineer` wires seams, `security-engineer` audits validation landing, `historian` verifies post-merge precedent. Seats that will edit files in parallel still need worktree isolation — see gotcha §1.
 2. **Fresh-crew ship.** If the original roster doesn't match the implementation shape, shut the seats down, then spawn implementer-shaped agents per §1. Each spawn prompt includes the decision log path so implementers read arbitrated decisions verbatim before starting.
 3. **Handoff to a separate session.** Long-running implementation or user wants to review the log first. Save, shut down, surface log path + handoff summary, stop. Next session picks up via `planning-and-task-breakdown` or `incremental-implementation`.
 
 **Non-negotiable across all paths:** the CEO does not type source code, author implementation tests, or run TDD cycles. Orchestration, routing, arbitration, record-keeping. Filing tracker items for the council's own deferred items is record-keeping, not implementation.
+
+### Implementer briefs
+
+The decision log keeps only a task row (title, files, dependency). Everything an implementer needs to do the task well goes into its brief, written at ship time, one per task — whether the brief is a re-brief message to a warm seat, a fresh-crew spawn prompt, or a section of the handoff summary:
+
+```
+TASK <n> of council-<slug>: <task title from the log>
+Decision log: ~/.claude/councils/<yyyy-mm-dd>-<slug>/log.md (read the rationale first)
+Files you own: <files>. Do not touch: <shared surfaces owned by other tasks, CHANGELOG.md>.
+Depends on: <task numbers, and the SHA/branch to base on once they land>
+Requirements: <acceptance criteria, edge cases and constraints the seats raised for this task>
+Tests: <what must be covered and how it's run>
+Base check: <the gotcha §5 base-fix paragraph>
+Report back: commit SHA(s), test result, and your one intended CHANGELOG line.
+```
+
+Pull the requirements from your debate notes and `brief.md`, not from memory of the log — the log deliberately omits them.
 
 ### Path-selection signals
 

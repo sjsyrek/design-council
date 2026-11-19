@@ -137,10 +137,10 @@ DECISION TO DEBATE:
 
 PROTOCOL CONTRACT:
 
-1. Reach the CEO with SendMessage(to: "team-lead"). The CEO only sees your last turn's text in an idle notice, and other seats see nothing you don't message to them — so anything that matters goes through SendMessage.
-2. First action: SendMessage(to: "team-lead", summary: "handshake", message: "HANDSHAKE <your-seat>: started on <area>."). Until it arrives, the CEO can't tell you from a spawn that never started.
-3. Deliver your position or findings via SendMessage to team-lead. End with an "Action items" list if you have any.
-4. Answer a shutdown_request with the structured form, echoing its request_id: SendMessage(to: "team-lead", message: {type: "shutdown_response", request_id: "<id>", approve: true}). A prose acknowledgement does not end your process.
+1. Reach the CEO with SendMessage(to: "main"). If that reports the name is not reachable, use "team-lead" (Claude Code before 2.1.328) and keep using whichever worked. The CEO only sees your last turn's text in an idle notice, and other seats see nothing you don't message to them — so anything that matters goes through SendMessage.
+2. First action: SendMessage(to: "main", summary: "handshake", message: "HANDSHAKE <your-seat>: started on <area>."). Until it arrives, the CEO can't tell you from a spawn that never started.
+3. Deliver your position or findings via SendMessage to the CEO. End with an "Action items" list if you have any.
+4. Answer a shutdown_request with the structured form, echoing its request_id: SendMessage(to: "main", message: {type: "shutdown_response", request_id: "<id>", approve: true}). A prose acknowledgement does not end your process.
 5. Peer DMs: SendMessage(to: "<peer-name>", ...). Wait until the CEO says peer DMs are open — a seat that is still starting up can miss a DM. Other seats: <list>.
 6. Debate protocol: open with a ≤300-word position paper, verdict tag APPROVE | CONCERNS | BLOCK, concrete file:line refs when critiquing. BLOCK requires a concrete scenario. In Review mode: no verdict tags; emit findings per the format in references/review-mode.md.
 ```
@@ -155,7 +155,7 @@ Verification, bounded to ~60s total:
 
 1. **Count handshakes** — incoming messages starting `HANDSHAKE <seat>:` against the roster. Any `Agent` call that returned an error is an immediate failure.
 2. **Re-spawn once** — a seat with no handshake after ~30s gets one nudge (`SendMessage(to: <seat>, message: "Send your HANDSHAKE line per the contract. No findings yet.")`). Still silent after another ~30s → re-spawn once with the same prompt; if that fails too, drop the seat and note the uncovered domain in the Phase 5 log.
-3. **Open peer DMs** — once the roster is settled, send each seat (one `SendMessage` per seat; there is no broadcast) the final roster and "Peer DMs are open."
+3. **Open peer DMs** — once the roster is settled, send each seat its own `SendMessage` (there is no broadcast) with the final roster and the literal sentence "Peer DMs are open." Send these before any cross-talk question and as separate messages: a seat that never gets the sentence keeps waiting and won't DM its peers. If seats reported that the address in their contract was unreachable, also tell them the address that worked.
 
 The CEO emits a structured status line before proceeding:
 

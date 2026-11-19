@@ -26,7 +26,7 @@ Agent teams must be enabled: `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` (Claude Co
 
 Also confirm `SendMessage` is among your tools; a host or permission setup can withhold it even with teams on. Without it, seats can't handshake, debate, or answer a shutdown request — tell the user, and run only with their consent as independent position papers with no cross-talk.
 
-Each session has exactly one implicit team. There is no team-creation or team-deletion step: an `Agent` call with a `name` adds that seat as a teammate; the CEO is `team-lead`.
+Each session has exactly one implicit team. There is no team-creation or team-deletion step: an `Agent` call with a `name` adds that seat as a teammate. Seats reach the CEO as `main` (`team-lead` before Claude Code 2.1.328; the seat contract tells them to fall back).
 
 ## When to invoke
 
@@ -81,7 +81,7 @@ Full protocol: `references/protocol.md`. Opening-prompt scaffold: `references/op
 
 Each spawn prompt inlines these delivery rules, because a seat cannot infer them from its role brief:
 
-1. Reach the CEO with `SendMessage(to: "team-lead")`. The CEO only sees a seat's last turn text in an idle notice, and peers see nothing a seat doesn't message to them.
+1. Reach the CEO with `SendMessage(to: "main")`, falling back to `"team-lead"` on older Claude Code. The CEO only sees a seat's last turn text in an idle notice, and peers see nothing a seat doesn't message to them.
 2. First action: a handshake whose message starts with `HANDSHAKE <seat>:`. Without it the seat is indistinguishable from a spawn that never started.
 3. Positions and findings go out via `SendMessage`. Answer a `shutdown_request` with the structured `shutdown_response` (echo the `request_id`), not prose.
 4. Don't DM peers until the CEO says peer DMs are open — a seat still starting up can miss a DM.

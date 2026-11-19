@@ -6,7 +6,7 @@ All notable changes to the design-council plugin are documented here. The format
 
 ### Added
 
-- **Eval suite** (`evals/`) for `claude plugin eval`: plan-card, teams-off and should-not-fire cases, plus one end-to-end three-seat council on the implicit agent team that checks named spawns, handshakes, per-seat peer-DM opening and shutdown, and the absence of `TeamCreate`/`TeamDelete`/broadcast. `evals/results/` is gitignored. See `evals/README.md`.
+- **Eval suite** (`evals/`) for `claude plugin eval`: plan-card, teams-off and should-not-fire cases, plus one end-to-end three-seat council on the implicit agent team that checks named spawns, handshakes, per-seat peer-DM opening and shutdown, and the absence of `TeamCreate`/`TeamDelete`/broadcast. Because those tools no longer exist, a call-count check can't fail; the case also fails when the CEO searches for them with `ToolSearch`, which is what the 0.4.1 skill did. `evals/results/` is gitignored. See `evals/README.md`.
 
 ### Changed
 

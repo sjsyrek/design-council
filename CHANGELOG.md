@@ -4,6 +4,8 @@ All notable changes to the design-council plugin are documented here. The format
 
 ## [Unreleased]
 
+## [0.5.1] — 2026-11-21
+
 ### Fixed
 
 - **README version-pinning instructions.** They pointed at a checkout "with its own `.claude-plugin/marketplace.json`", which this repo doesn't have; they now use `claude --plugin-dir` on a checked-out tag.

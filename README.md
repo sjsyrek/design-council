@@ -101,7 +101,7 @@ This is a Claude Code harness setting, not a plugin requirement.
 /plugin install design-council@sjsyrek
 ```
 
-The marketplace lives at [sjsyrek/claude-plugins](https://github.com/sjsyrek/claude-plugins) and points at this repo. To pin a version, clone this repo at a tag (e.g., `v0.2.0`) and load via `/plugin marketplace add <local-path>` pointing at a checkout with its own `.claude-plugin/marketplace.json`.
+The marketplace lives at [sjsyrek/claude-plugins](https://github.com/sjsyrek/claude-plugins) and points at this repo. To try a specific version, check out its tag (e.g. `git checkout v0.5.0`) and start Claude Code with `claude --plugin-dir <checkout>`.
 
 ## Runtime requirements
 
